@@ -13,6 +13,9 @@ export default function SignIn() {
       style={{
         paddingLeft: 20,
         paddingRight: 20,
+        backgroundColor: theme.colors.background,
+        width: "100%",
+        height: "100%"
       }}
     >
       <Text variant="headlineMedium" style={{textAlign: "center"}}>
