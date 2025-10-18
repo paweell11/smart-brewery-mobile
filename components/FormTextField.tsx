@@ -5,7 +5,6 @@ import { HelperText, TextInput } from "react-native-paper";
 
 type FormTextFieldProps = {
   label: string;
-  type: string;
   style?: StyleProp<TextStyle>;
   togglePasswordBtn?: boolean;
 }

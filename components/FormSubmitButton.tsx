@@ -1,6 +1,6 @@
 import { useFormContext } from "@/hooks/form-context";
 import { Animated, RegisteredStyle, ViewStyle } from "react-native";
-import { Button, useTheme } from "react-native-paper";
+import { Button } from "react-native-paper";
 
 type FormSubmitButtonProps = {
   style?: false | "" | RegisteredStyle<ViewStyle> | Animated.Value | Animated.AnimatedInterpolation<string | number> | Animated.WithAnimatedObject<ViewStyle> | null | undefined
