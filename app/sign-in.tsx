@@ -1,32 +1,33 @@
 import SignInForm from "@/components/SignInForm";
 import { Image } from "expo-image";
-import { View } from "react-native";
+import { useRouter } from "expo-router";
+import { KeyboardAvoidingView, ScrollView, View } from "react-native";
 import { Button, Text, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 
 export default function SignIn() {
   const theme = useTheme();
+  const router = useRouter();
 
-  return(
-    <SafeAreaView 
+  return (
+    <SafeAreaView
+      edges={["bottom", "left", "right"]}
       style={{
+        paddingTop: 10,
         paddingLeft: 20,
         paddingRight: 20,
         backgroundColor: theme.colors.background,
-        width: "100%",
+        width: "auto",
         height: "100%"
       }}
     >
-      <Text variant="headlineMedium" style={{textAlign: "center"}}>
-        Logowanie
-      </Text>
-
       <View>
         <Image 
           style={{
-            width: 300,
-            height: 300,
+            width: 200,
+            height: 200,
+            marginTop: 0,
             marginLeft: "auto",
             marginRight: "auto"
           }}
@@ -34,30 +35,35 @@ export default function SignIn() {
         />      
       </View>
     
-      <Text variant="titleMedium" style={{paddingTop: 20, paddingBottom: 20, textAlign: "center"}}>
-        Zaloguj się za pomocą swojego adresu e-mail
+      <Text variant="titleMedium" style={{paddingTop: 10, paddingBottom: 10, textAlign: "center"}}>
+        Zaloguj się za pomocą swojego adresu e-mail.
       </Text>
 
-      <View>
-        <SignInForm />
+      <KeyboardAvoidingView behavior="height" keyboardVerticalOffset={92.33333206176758}>
+        <ScrollView>
+          <View>
+            <SignInForm />
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+      
+      <View style={{marginTop: 50}}>
+        <Text variant="titleMedium" style={{marginBottom: 5, textAlign: "center"}}>
+          Nie masz jeszcze konta?
+        </Text>
+
+        <Button
+          mode="outlined"
+          style={{
+            marginBottom: 100
+          }}
+          onPress={() => router.navigate("/sign-up")}
+        >
+          Zarejstruj się
+        </Button>
       </View>
-      
-      
-      <Text variant="titleMedium" style={{marginTop: 40, marginBottom: 5, textAlign: "center"}}>
-        Nie masz jeszcze konta?
-      </Text>
 
-      <Button
-        mode="outlined"
-        style={{
-          marginBottom: 10
-        }}
-      >
-        Zarejstruj się
-      </Button>
     </SafeAreaView>
-
-
 
   );
 }

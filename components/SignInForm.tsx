@@ -52,7 +52,7 @@ export default function SignInForm() {
                 return "Pole nie może być puste."
               }
 
-              if (value.length <= 5) {
+              if (value.length < 5) {
                 return "Hasło zbyt krótkie."
               }
             }
@@ -67,7 +67,7 @@ export default function SignInForm() {
           }
         </form.AppField>
 
-        <FromSubmitButton />
+        <FromSubmitButton text={"Zaloguj się"}/>
 
       </View>
     </form.AppForm>
