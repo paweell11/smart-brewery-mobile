@@ -1,12 +1,16 @@
 import SignInForm from "@/components/SignInForm";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
+import { useRef } from "react";
 import { KeyboardAvoidingView, ScrollView, View } from "react-native";
 import { Button, Text, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 
 export default function SignIn() {
+  const headerHeight = useHeaderHeight();
+  const {current: frHeaderHeight} = useRef(headerHeight); // first render header height
   const theme = useTheme();
   const router = useRouter();
 
@@ -39,7 +43,7 @@ export default function SignIn() {
         Zaloguj się za pomocą swojego adresu e-mail.
       </Text>
 
-      <KeyboardAvoidingView behavior="height" keyboardVerticalOffset={92.33333206176758}>
+      <KeyboardAvoidingView behavior="height" keyboardVerticalOffset={frHeaderHeight + 5}>
         <ScrollView>
           <View>
             <SignInForm />

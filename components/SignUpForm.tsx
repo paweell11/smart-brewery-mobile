@@ -1,9 +1,12 @@
 import { useAppForm } from "@/hooks/form";
 import { View } from "react-native";
 import FromSubmitButton from "./FormSubmitButton";
+import { useAuthContext } from "@/hooks/useAuthContext";
 
 
 export default function SignUpForm() {
+  const { setIsAuthenticated } = useAuthContext();
+
   const form = useAppForm({
     defaultValues: {
       firstName: "",
@@ -13,6 +16,7 @@ export default function SignUpForm() {
     },
     onSubmit: ({value}) => {
       console.log(value);
+      setIsAuthenticated(true);
     }
   })
 

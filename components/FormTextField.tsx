@@ -33,7 +33,8 @@ export function FormTextField({ label, style, togglePasswordBtn }: FormTextField
       <HelperText 
         type="error"
         style={{
-          paddingTop: 2
+          paddingTop: 0,
+          paddingBottom: 0,
         }}
         children={field.state.meta.errors[0] ?? " "}
       />

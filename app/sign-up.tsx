@@ -1,14 +1,16 @@
 import SignUpForm from "@/components/SignUpForm";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
+import { useRef } from "react";
 import { KeyboardAvoidingView, ScrollView, View } from "react-native";
-import { Button, Text, useTheme } from "react-native-paper";
+import { Text, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 
 export default function SignUp() {
+  const headerHeight = useHeaderHeight();
+  const {current: frHeaderHeight} = useRef(headerHeight); // frist render header height
   const theme = useTheme();
-  const router = useRouter();
 
   return (
     <SafeAreaView
@@ -22,11 +24,12 @@ export default function SignUp() {
         height: "100%"
       }}
     >
+      
       <View>
         <Image 
           style={{
-            width: 100,
-            height: 100,
+            width: 80,
+            height: 80,
             marginTop: 0,
             marginLeft: "auto",
             marginRight: "auto",
@@ -36,19 +39,18 @@ export default function SignUp() {
         />      
       </View>
     
-      <Text variant="titleMedium" style={{paddingTop: 10, paddingBottom: 10, textAlign: "center"}}>
+      <Text variant="titleMedium" style={{paddingTop: 15, paddingBottom: 15, textAlign: "center"}}>
         Zarejsetruj się używając swojego imienia, nazwiska, adresu e-mail oraz tworząc hasło. Hasło musi zawierać co najmniej 5 znaków.
       </Text>
 
-      <KeyboardAvoidingView behavior="height" keyboardVerticalOffset={92.33333206176758}>
+      <KeyboardAvoidingView behavior="height" keyboardVerticalOffset={frHeaderHeight + 5}>
         <ScrollView>
           <View>
             <SignUpForm />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-
+    
     </SafeAreaView>
-
   );
 }

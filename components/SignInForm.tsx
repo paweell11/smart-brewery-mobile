@@ -2,6 +2,7 @@ import { useAppForm } from "@/hooks/form";
 import { formOptions } from "@tanstack/react-form";
 import { View } from "react-native";
 import FromSubmitButton from "./FormSubmitButton";
+import { useAuthContext } from "@/hooks/useAuthContext";
 
 const signInFormOpts = formOptions({
   defaultValues: {
@@ -12,10 +13,13 @@ const signInFormOpts = formOptions({
 
 
 export default function SignInForm() {
+  const { setIsAuthenticated } = useAuthContext();
+
   const form = useAppForm({
     ...signInFormOpts,
     onSubmit: (({value}) => {
       console.log(value);
+      setIsAuthenticated(true);
     })
   })
 

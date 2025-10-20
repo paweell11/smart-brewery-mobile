@@ -1,8 +1,58 @@
-import { Redirect, Stack, useRouter } from "expo-router";
+import { useAuthContext } from "@/hooks/useAuthContext";
+import { AuthContextProvider } from "@/providers/AuthContextProvider";
+import { Stack, useRouter } from "expo-router";
 import { useColorScheme } from "react-native";
-import { MD3DarkTheme as DarkTheme, IconButton, MD3LightTheme as LightTheme, PaperProvider, Text } from "react-native-paper";
-import { darkThemeColors } from "./constants/darkThemeColors";
-import { lightThemeColors } from "./constants/lightThemeColors";
+import { MD3DarkTheme as DarkTheme, IconButton, MD3LightTheme as LightTheme, PaperProvider, Text, useTheme } from "react-native-paper";
+import { darkThemeColors } from "../constants/darkThemeColors";
+import { lightThemeColors } from "../constants/lightThemeColors";
+
+
+function RootStack() {
+  const router = useRouter();
+  const theme = useTheme();
+  const { isAuthenticated } = useAuthContext();
+
+  return (
+    <Stack>
+      <Stack.Protected guard={isAuthenticated} >
+        <Stack.Screen name="(tabs)" />
+      </Stack.Protected>
+
+      <Stack.Protected guard={!isAuthenticated} >
+        <Stack.Screen 
+          name="sign-in" 
+          options={{
+            headerStyle: {
+              backgroundColor: theme.colors.background
+            },
+            headerTitleAlign: "center",
+            headerTitle: props => <Text variant="headlineMedium">Logowanie</Text>,
+          }}
+        />
+        <Stack.Screen 
+          name="sign-up" 
+          options={{
+            title: "Rejestracja", 
+            headerTitleAlign: "center",
+            headerStyle: {
+              backgroundColor: theme.colors.background,
+              
+            },
+            headerTitle: props => <Text variant="headlineMedium" style={{textAlign: "center"}}>Rejestracja</Text>,
+            headerLeft: props => 
+              <IconButton 
+                mode="contained" 
+                icon="arrow-left" 
+                style={{borderRadius: theme.roundness}}
+                onPress={() => router.back()}
+              />,
+          }}
+        />
+      </Stack.Protected>
+    </Stack>
+  );
+}
+
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
@@ -12,45 +62,10 @@ export default function RootLayout() {
     {...DarkTheme, roundness: 2, colors: darkThemeColors.colors};
   
   return (
-    
     <PaperProvider theme={theme}>
-      <Redirect href={"/sign-in"}/>
-      <Stack>
-        <Stack.Protected guard={true} >
-          <Stack.Screen name="(tabs)/index"/>
-        </Stack.Protected>
-
-        <Stack.Protected guard={true} >
-          <Stack.Screen 
-            name="sign-in" 
-            options={{
-              headerStyle: {
-                backgroundColor: theme.colors.background
-              },
-              headerTitle: props => <Text variant="headlineMedium" style={{textAlign: "center"}}>Logowanie</Text>,
-            }} 
-          />
-          <Stack.Screen 
-            name="sign-up" 
-            options={{
-              title: "Rejestracja", 
-              headerStyle: {
-                backgroundColor: theme.colors.background,
-              },
-              headerTitle: props => <Text variant="headlineMedium" style={{marginLeft: 44}}>Rejestracja</Text>,
-              headerLeft: props => 
-                <IconButton 
-                  mode="contained" 
-                  icon="arrow-left" 
-                  style={{borderRadius: theme.roundness}}
-                  onPress={() => router.back()}
-                />
-            }}
-          />
-        </Stack.Protected>
-
-
-      </Stack>
+      <AuthContextProvider>
+        <RootStack />
+      </AuthContextProvider>
     </PaperProvider>
   );
 }
