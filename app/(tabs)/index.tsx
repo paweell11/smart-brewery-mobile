@@ -1,25 +1,15 @@
-// app/(tabs)/index.tsx
-import { StyleSheet, Text, View } from "react-native";
-import BottomBar from "../../components/BottomBar";
+import { Text, View } from "react-native";
 
-export default function HomeScreen() {
+export default function Index() {
   return (
-    <View style={styles.container}>
-      <View style={styles.content}>
-        <Text>To będzie Twoja strona główna (Home)</Text>
-      </View>
-
-      <BottomBar />
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+      }}
+    >
+      <Text>Edit app/index.tsx to edit this screen.</Text>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingBottom: 72, // żeby treść nie była pod paskiem
-  },
-});
