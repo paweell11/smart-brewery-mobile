@@ -15,7 +15,9 @@ function RootStack() {
   return (
     <Stack>
       <Stack.Protected guard={isAuthenticated} >
-        <Stack.Screen name="(tabs)/index" />
+        <Stack.Screen name="(tabs)" 
+        options={{ headerShown: false }}
+        />
       </Stack.Protected>
 
       <Stack.Protected guard={!isAuthenticated} >

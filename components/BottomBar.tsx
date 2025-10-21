@@ -12,8 +12,8 @@ type Tab = {
 };
 
 const TABS: Tab[] = [
-  { key: "home", title: "Home", focusedIcon: "home-outline", href: "/" as Href},
-  { key: "more", title: "More", focusedIcon: "dots-horizontal", href: "/more" as Href},
+  { key: "home", title: "Czujniki", focusedIcon: "home-outline", href: "/" as Href},
+  { key: "more", title: "Więcej", focusedIcon: "dots-horizontal", href: "/more" as Href},
 ];
 
 export default function BottomBar() {

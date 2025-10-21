@@ -1,23 +1,24 @@
 import { StyleSheet, Text, View } from "react-native";
-import BottomBar from "../../components/BottomBar";
+import FullWidthHeader from "../../components/FullWidthHeader";
 
 export default function MoreScreen() {
   return (
     <View style={styles.container}>
-      <View style={styles.content}>
-        <Text>Ekran „More” – tutaj dodasz ustawienia itp.</Text>
-      </View>
-      <BottomBar />
+        <FullWidthHeader
+            title="Moje konto"
+            logoSource={require("../../assets/images/brewery-logo.png")}
+            align="left"
+            size="lg"
+        />
+      <Text>Ekran „More” – tutaj dodasz ustawienia itp.</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  content: {
+  container: {
     flex: 1,
     alignItems: "center",
-    justifyContent: "center",
-    paddingBottom: 72,
+    // justifyContent: "center",
   },
 });
