@@ -15,7 +15,7 @@ function RootStack() {
   return (
     <Stack>
       <Stack.Protected guard={isAuthenticated} >
-        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(tabs)/index" />
       </Stack.Protected>
 
       <Stack.Protected guard={!isAuthenticated} >

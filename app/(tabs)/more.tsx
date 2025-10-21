@@ -1,11 +1,11 @@
 import { StyleSheet, Text, View } from "react-native";
 import BottomBar from "../../components/BottomBar";
 
-export default function HomeScreen() {
+export default function MoreScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.content}>
-        <Text>To będzie Twoja strona główna (Home)</Text>
+        <Text>Ekran „More” – tutaj dodasz ustawienia itp.</Text>
       </View>
       <BottomBar />
     </View>
@@ -18,6 +18,6 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    paddingBottom: 72, 
+    paddingBottom: 72,
   },
 });
