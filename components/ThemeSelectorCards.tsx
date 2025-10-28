@@ -3,7 +3,7 @@ import * as React from "react";
 import { StyleSheet, View } from "react-native";
 import { Icon, RadioButton, Surface, Text, useTheme } from "react-native-paper";
 
-export default function ThemeSelectorCard() {
+export default function ThemeSelectorCards() {
   const theme = useTheme();
   const { mode, setMode } = useThemeMode();
 
