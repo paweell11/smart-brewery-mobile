@@ -1,22 +1,16 @@
-// components/ThemeSelectorCard.tsx
+import { useThemeMode } from "@/providers/ThemeModeProvider";
 import * as React from "react";
 import { StyleSheet, View } from "react-native";
 import { Icon, RadioButton, Surface, Text, useTheme } from "react-native-paper";
 
-type ThemeChoice = "auto" | "light" | "dark";
-
-type Props = {
-  value: ThemeChoice;                    // która opcja jest aktualnie wybrana
-  onChange?: (val: ThemeChoice) => void; // kliknięcie w wiersz
-};
-
-export default function ThemeSelectorCard({ value, onChange }: Props) {
+export default function ThemeSelectorCard() {
   const theme = useTheme();
+  const { mode, setMode } = useThemeMode();
 
-  const OPTIONS: { key: ThemeChoice; label: string; icon: string }[] = [
-    { key: "auto",  label: "Automatyczny", icon: "theme-light-dark" },
-    { key: "light", label: "Jasny",        icon: "white-balance-sunny" },
-    { key: "dark",  label: "Ciemny",       icon: "moon-waning-crescent" },
+  const OPTIONS = [
+    { key: "auto" as const,  label: "Automatyczny", icon: "theme-light-dark" },
+    { key: "light" as const, label: "Jasny",        icon: "white-balance-sunny" },
+    { key: "dark" as const,  label: "Ciemny",       icon: "moon-waning-crescent" },
   ];
 
   return (
@@ -39,7 +33,7 @@ export default function ThemeSelectorCard({ value, onChange }: Props) {
         elevation={0}
       >
         {OPTIONS.map((opt, idx) => {
-          const selected = value === opt.key;
+          const selected = mode === opt.key;
           const isLast = idx === OPTIONS.length - 1;
 
           return (
@@ -52,9 +46,8 @@ export default function ThemeSelectorCard({ value, onChange }: Props) {
                   borderBottomColor: theme.colors.outlineVariant,
                 },
               ]}
-              // cały wiersz klikalny
               onTouchEnd={() => {
-                onChange?.(opt.key);
+                setMode(opt.key); 
               }}
             >
               <View style={styles.rowLeft}>
@@ -77,14 +70,14 @@ export default function ThemeSelectorCard({ value, onChange }: Props) {
               <RadioButton
                 value={opt.key}
                 status={selected ? "checked" : "unchecked"}
-                onPress={() => onChange?.(opt.key)}
+                onPress={() => setMode(opt.key)}
               />
             </View>
           );
         })}
       </Surface>
-{/* 
-      <Text
+
+      {/* <Text
         variant="bodySmall"
         style={[
           styles.helperText,
