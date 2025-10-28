@@ -1,26 +1,18 @@
+import { useRouter } from "expo-router";
 import * as React from "react";
 import { StyleSheet, View } from "react-native";
 import { Icon, Surface, Text, useTheme } from "react-native-paper";
 
-export type AccountActionsCardProps = {
-  onPressProfile?: () => void;
-  onPressAbout?: () => void;
-  onPressLogout?: () => void;
-};
-
-export default function AccountActionsCard({
-  onPressProfile,
-  onPressAbout,
-  onPressLogout,
-}: AccountActionsCardProps) {
+export default function AccountActionsCard() {
   const theme = useTheme();
+  const router = useRouter();
 
   const ROWS = [
     {
       key: "profile" as const,
       label: "Mój profil",
       icon: "account-outline",
-      onPress: onPressProfile,
+      onPress: () => router.push("/(settings)/myprofile"),
       tone: "normal" as const,
       showChevron: true,
     },
@@ -28,7 +20,7 @@ export default function AccountActionsCard({
       key: "about" as const,
       label: "O aplikacji",
       icon: "information-outline",
-      onPress: onPressAbout,
+      onPress: () => router.push("/(settings)/about"),
       tone: "normal" as const,
       showChevron: true,
     },
@@ -36,7 +28,10 @@ export default function AccountActionsCard({
       key: "logout" as const,
       label: "Wyloguj",
       icon: "logout",
-      onPress: onPressLogout,
+      onPress: () => {
+        // TODO: wylogowanie
+        console.log("Wyloguj kliknięty");
+      },
       tone: "destructive" as const,
       showChevron: false,
     },
@@ -56,10 +51,9 @@ export default function AccountActionsCard({
       >
         {ROWS.map((row, idx) => {
           const isLast = idx === ROWS.length - 1;
-
           const color =
             row.tone === "destructive"
-              ? theme.colors.error 
+              ? theme.colors.error
               : theme.colors.onSurface;
 
           return (
@@ -72,15 +66,13 @@ export default function AccountActionsCard({
                   borderBottomColor: theme.colors.outlineVariant,
                 },
               ]}
-              onTouchEnd={() => {
-                row.onPress?.();
-              }}
+              onTouchEnd={row.onPress}
             >
               <View style={styles.leftSide}>
                 <View style={styles.leftIconWrap}>
                   <Icon
                     source={row.icon}
-                    size={22} 
+                    size={22}
                     color={color}
                   />
                 </View>
@@ -96,7 +88,7 @@ export default function AccountActionsCard({
               {row.showChevron ? (
                 <Icon
                   source="chevron-right"
-                  size={22} 
+                  size={22}
                   color={theme.colors.onSurface}
                 />
               ) : (
@@ -113,10 +105,10 @@ export default function AccountActionsCard({
 const styles = StyleSheet.create({
   wrapper: {
     marginHorizontal: 16,
-    marginTop: 32, 
+    marginTop: 32,
   },
   card: {
-    borderRadius: 16, 
+    borderRadius: 16,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: "hidden",
   },
@@ -124,7 +116,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 18, 
+    paddingVertical: 18,
     justifyContent: "space-between",
   },
   leftSide: {
