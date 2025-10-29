@@ -1,10 +1,13 @@
 // app/(settings)/myprofile.tsx
+import { useAuthContext } from "@/hooks/useAuthContext";
 import * as React from "react";
 import { StyleSheet, View } from "react-native";
 import { Text, useTheme } from "react-native-paper";
 
 export default function MyProfileScreen() {
   const theme = useTheme();
+  const { userData } = useAuthContext();
+  const { firstName, lastName, email } = userData;
 
   return (
     <View style={[styles.screen, { backgroundColor: theme.colors.background }]}>
@@ -24,7 +27,7 @@ export default function MyProfileScreen() {
             lineHeight: 20,
           }}
         >
-          Tutaj pokażemy dane użytkownika, e-mail, itp.
+          {`Imię: ${firstName}, Nazwisko: ${lastName}, E-mail: ${email}`}
         </Text>
       </View>
     </View>

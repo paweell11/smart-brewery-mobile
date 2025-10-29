@@ -8,8 +8,8 @@ export default function MoreScreen() {
   return (
     <View style={styles.screen}>
       <FullWidthHeader
-        title="Moje konto"
-        logoSource={require("../../assets/images/brewery-logo.png")}
+        title="Więcej"
+        logoSource={require("../../assets/images/brewery-logo-no-title.png")}
         align="left"
         size="lg"
       />
