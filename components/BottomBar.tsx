@@ -12,7 +12,7 @@ type Tab = {
 };
 
 const TABS: Tab[] = [
-  { key: "home", title: "Czujniki", focusedIcon: "home-outline", href: "/" as Href},
+  { key: "home", title: "Czujniki", focusedIcon: "broadcast", href: "/" as Href},
   { key: "more", title: "Więcej", focusedIcon: "dots-horizontal", href: "/more" as Href},
 ];
 

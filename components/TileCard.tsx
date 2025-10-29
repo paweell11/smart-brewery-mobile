@@ -6,7 +6,7 @@ type Props = { title: string; onPress: () => void };
 
 export default function TileCard({ title, onPress }: Props) {
   return (
-    <Card style={styles.card} mode="elevated" onPress={onPress}>
+    <Card style={styles.card} mode="contained" onPress={onPress}>
       <Card.Title title={title} />
       <Card.Content>
         <Text variant="bodySmall" style={{ opacity: 0.7 }}>

@@ -24,10 +24,7 @@ export default function SettingsLayout() {
             mode="contained"
             style={{
               borderRadius: theme.roundness,
-              backgroundColor: theme.colors.elevation.level3,
-              marginLeft: 8,
             }}
-            iconColor={theme.colors.onSurface}
             onPress={() => router.back()}
           />
         ),

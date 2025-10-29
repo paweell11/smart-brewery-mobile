@@ -3,11 +3,12 @@ import { Button, Dialog, Portal, Text, useTheme } from "react-native-paper";
 
 type ErrorDialogProps = {
   message: string | undefined;
+  btnText: string;
   onClose: () => void
 }
 
 
-function ErrorDialog({ message, onClose }: ErrorDialogProps) {
+function ErrorDialog({ message, btnText, onClose }: ErrorDialogProps) {
   const theme = useTheme();
 
   return (
@@ -20,7 +21,7 @@ function ErrorDialog({ message, onClose }: ErrorDialogProps) {
             <Text variant="bodyLarge">{message}</Text>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button mode="outlined" onPress={() => onClose()}>Zamknij</Button>
+            <Button mode="outlined" onPress={() => onClose()}>{btnText}</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>

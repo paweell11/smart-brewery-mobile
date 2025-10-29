@@ -1,11 +1,10 @@
-import { ErrorType } from "@/app/types";
-import wssUrl from "@/constants/wss-origin";
 import { useAppForm } from "@/hooks/form";
 import { useAuthContext } from "@/hooks/useAuthContext";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { ErrorType } from "@/types";
 import { formOptions } from "@tanstack/react-form";
 import { View } from "react-native";
 import FromSubmitButton from "./FormSubmitButton";
-import { useWebSocket } from "@/hooks/useWebSocket";
 
 
 const signInFormOpts = formOptions({
@@ -19,7 +18,7 @@ const signInFormOpts = formOptions({
 export default function SignInForm({ setError }: { setError: (e: ErrorType) => void}) {
   const { setIsAuthenticated, setUserData } = useAuthContext();
   const { ws, connectionStates } = useWebSocket();
-  const { isOpen, isClosed } = connectionStates;
+  const { isOpen } = connectionStates;
 
 
   const form = useAppForm({
@@ -47,13 +46,8 @@ export default function SignInForm({ setError }: { setError: (e: ErrorType) => v
           }
 
           if (type === "error" && error) {
-            setError({ isError: true, message: error});
+            setError({ isError: true, type: "basic", message: error});
           }
-
-        }
-
-        ws.onerror = () => {
-          setError({ isError: true, message: "Unexpected error"});
         }
 
       }

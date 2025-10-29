@@ -1,4 +1,8 @@
+import ErrorDialog from "@/components/ErrorDialog";
+import LoadingDialog from "@/components/LoadingDialog";
 import SignInForm from "@/components/SignInForm";
+import { useAuthContext } from "@/hooks/useAuthContext";
+import { useWebSocket } from "@/hooks/useWebSocket";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
@@ -6,17 +10,33 @@ import { useRef, useState } from "react";
 import { KeyboardAvoidingView, ScrollView, View } from "react-native";
 import { Button, Text, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ErrorType } from "./types";
-import ErrorDialog from "@/components/ErrorDialog";
+import { ErrorType } from "../../types";
 
 
 export default function SignIn() {
+  const { isAuthenticated } = useAuthContext();
+  const { ws, connectionStates, connect } = useWebSocket();
   const [error, setError] = useState<ErrorType>({ isError: false });
+  
   const headerHeight = useHeaderHeight();
   const { current: frHeaderHeight } = useRef(headerHeight); // first render header height
   const theme = useTheme();
   const router = useRouter();
 
+
+
+  if (connectionStates.isClosed && !isAuthenticated && !error.isError) {
+    setError({ isError: true, type: "connection", message: "Utracono połączenie"});
+  }
+
+  if (ws) {
+    ws.onerror = (ev) => {
+      setError({ isError: true, type: "basic", message: `Niezidentyfikowany błąd ${ev}`});
+    }
+  }
+
+  console.log(connectionStates.isConnecting)
+  
   return (
     <SafeAreaView
       edges={["bottom", "left", "right"]}
@@ -38,7 +58,7 @@ export default function SignIn() {
             marginLeft: "auto",
             marginRight: "auto"
           }}
-          source={require("../assets/images/brewery-logo.png")}
+          source={require("@/assets/images/brewery-logo.png")}
         />      
       </View>
     
@@ -71,14 +91,32 @@ export default function SignIn() {
       </View>
 
       {
-        (error.isError) &&
+        (error.isError && error.type === "basic") &&
         <ErrorDialog 
           message={error.message}
+          btnText={"Zamknij"}
           onClose={() => setError({ isError: false })}
         />
       }
 
-    </SafeAreaView>
+      {
+        (error.isError && error.type === "connection") &&
+        <ErrorDialog 
+          message={error.message}
+          btnText={"Połącz"}
+          onClose={() => {
+            setError({ isError: false });
+            connect();
+          }}
+        />
+      }
 
+      {
+        (connectionStates.isConnecting) &&
+        <LoadingDialog />
+      }
+      
+
+    </SafeAreaView>
   );
 }

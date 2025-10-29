@@ -1,15 +1,14 @@
-import { ErrorType } from "@/app/types";
-import wssUrl from "@/constants/wss-origin";
 import { useAppForm } from "@/hooks/form";
 import { useAuthContext } from "@/hooks/useAuthContext";
+import { useWebSocket } from "@/hooks/useWebSocket";
+import { ErrorType } from "@/types";
 import { View } from "react-native";
 import FromSubmitButton from "./FormSubmitButton";
-import { useWebSocket } from "@/hooks/useWebSocket";
 
 export default function SignUpForm({ setError }: { setError: (e: ErrorType) => void }) {
   const { setIsAuthenticated, setUserData } = useAuthContext();
   const { ws, connectionStates } = useWebSocket();
-  const { isOpen, isClosed } = connectionStates;
+  const { isOpen } = connectionStates;
 
 
   const form = useAppForm({
@@ -46,10 +45,6 @@ export default function SignUpForm({ setError }: { setError: (e: ErrorType) => v
             setError({ isError: true, message: error });
           }
 
-        };
-
-        ws.onerror = (ev) => {
-          setError({ isError: true, message: "Unexpected error"});
         }
       
       }

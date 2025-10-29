@@ -47,7 +47,7 @@ export default function HomeScreen() {
     <View style={styles.screen}>
       <FullWidthHeader
         title="Czujniki"
-        align="left"
+        align="center"
         onMeasuredHeight={setHeaderH} 
       />
 
