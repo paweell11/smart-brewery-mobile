@@ -1,8 +1,12 @@
+import { ErrorType } from "@/app/types";
+import wssUrl from "@/constants/wss-origin";
 import { useAppForm } from "@/hooks/form";
+import { useAuthContext } from "@/hooks/useAuthContext";
 import { formOptions } from "@tanstack/react-form";
 import { View } from "react-native";
 import FromSubmitButton from "./FormSubmitButton";
-import { useAuthContext } from "@/hooks/useAuthContext";
+import { useWebSocket } from "@/hooks/useWebSocket";
+
 
 const signInFormOpts = formOptions({
   defaultValues: {
@@ -12,16 +16,50 @@ const signInFormOpts = formOptions({
 })
 
 
-export default function SignInForm() {
-  const { setIsAuthenticated } = useAuthContext();
+export default function SignInForm({ setError }: { setError: (e: ErrorType) => void}) {
+  const { setIsAuthenticated, setUserData } = useAuthContext();
+  const { ws, connectionStates } = useWebSocket();
+  const { isOpen, isClosed } = connectionStates;
+
 
   const form = useAppForm({
     ...signInFormOpts,
-    onSubmit: (({value}) => {
-      console.log(value);
-      setIsAuthenticated(true);
-    })
-  })
+    onSubmit: ({ value }) => {
+      
+      let loginData: Record<string, string> = {...value};
+      loginData["type"] = "login";
+
+      if (ws) {
+        
+        if (isOpen) {
+          ws.send(JSON.stringify(loginData));
+          console.log("Send:", loginData)
+        }
+
+        ws.onmessage = (ev) => {
+          console.log("Received:", ev.data);
+          
+          const { type, firstName, lastName, email, error } = JSON.parse(ev.data);
+          if (type === "loginSuccess" && firstName && lastName && email) {
+            setIsAuthenticated(true);
+            setUserData({ firstName, lastName, email });
+            ws.close();
+          }
+
+          if (type === "error" && error) {
+            setError({ isError: true, message: error});
+          }
+
+        }
+
+        ws.onerror = () => {
+          setError({ isError: true, message: "Unexpected error"});
+        }
+
+      }
+
+    }
+  });
 
   return (
     <form.AppForm>

@@ -2,15 +2,18 @@ import SignInForm from "@/components/SignInForm";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { KeyboardAvoidingView, ScrollView, View } from "react-native";
 import { Button, Text, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ErrorType } from "./types";
+import ErrorDialog from "@/components/ErrorDialog";
 
 
 export default function SignIn() {
+  const [error, setError] = useState<ErrorType>({ isError: false });
   const headerHeight = useHeaderHeight();
-  const {current: frHeaderHeight} = useRef(headerHeight); // first render header height
+  const { current: frHeaderHeight } = useRef(headerHeight); // first render header height
   const theme = useTheme();
   const router = useRouter();
 
@@ -46,7 +49,7 @@ export default function SignIn() {
       <KeyboardAvoidingView behavior="height" keyboardVerticalOffset={frHeaderHeight + 5}>
         <ScrollView>
           <View>
-            <SignInForm />
+            <SignInForm setError={(e: ErrorType) => setError(e)}/>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -66,6 +69,14 @@ export default function SignIn() {
           Zarejstruj się
         </Button>
       </View>
+
+      {
+        (error.isError) &&
+        <ErrorDialog 
+          message={error.message}
+          onClose={() => setError({ isError: false })}
+        />
+      }
 
     </SafeAreaView>
 

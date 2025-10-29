@@ -1,13 +1,16 @@
 import SignUpForm from "@/components/SignUpForm";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Image } from "expo-image";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { KeyboardAvoidingView, ScrollView, View } from "react-native";
 import { Text, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { ErrorType } from "./types";
+import ErrorDialog from "@/components/ErrorDialog";
 
 
 export default function SignUp() {
+  const [error, setError] = useState<ErrorType>({ isError: false })
   const headerHeight = useHeaderHeight();
   const {current: frHeaderHeight} = useRef(headerHeight); // frist render header height
   const theme = useTheme();
@@ -46,10 +49,18 @@ export default function SignUp() {
       <KeyboardAvoidingView behavior="height" keyboardVerticalOffset={frHeaderHeight + 5}>
         <ScrollView>
           <View>
-            <SignUpForm />
+            <SignUpForm setError={(e: ErrorType) => setError(e)} />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {
+        (error.isError) &&
+        <ErrorDialog 
+          message={error.message}
+          onClose={() => setError({ isError: false })}
+        />
+      }
     
     </SafeAreaView>
   );

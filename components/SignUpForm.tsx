@@ -1,11 +1,16 @@
+import { ErrorType } from "@/app/types";
+import wssUrl from "@/constants/wss-origin";
 import { useAppForm } from "@/hooks/form";
+import { useAuthContext } from "@/hooks/useAuthContext";
 import { View } from "react-native";
 import FromSubmitButton from "./FormSubmitButton";
-import { useAuthContext } from "@/hooks/useAuthContext";
+import { useWebSocket } from "@/hooks/useWebSocket";
 
+export default function SignUpForm({ setError }: { setError: (e: ErrorType) => void }) {
+  const { setIsAuthenticated, setUserData } = useAuthContext();
+  const { ws, connectionStates } = useWebSocket();
+  const { isOpen, isClosed } = connectionStates;
 
-export default function SignUpForm() {
-  const { setIsAuthenticated } = useAuthContext();
 
   const form = useAppForm({
     defaultValues: {
@@ -16,9 +21,41 @@ export default function SignUpForm() {
     },
     onSubmit: ({value}) => {
       console.log(value);
-      setIsAuthenticated(true);
+
+      let registerData: Record<string, string> = {...value};
+      registerData["type"] = "register";
+
+      if (ws) {
+
+        if (isOpen) {
+          ws.send(JSON.stringify(registerData));
+          console.log("Send:", registerData);
+        }
+
+        ws.onmessage = (ev) => {
+          console.log("Received:", ev.data);
+          
+          const { type, firstName, lastName, email, error } = JSON.parse(ev.data);
+          if (type === "registerSuccess" && firstName && lastName && email) {
+            setIsAuthenticated(true);
+            setUserData({ firstName, lastName, email });
+            ws.close();
+          }
+
+          if (type === "error" && error) {
+            setError({ isError: true, message: error });
+          }
+
+        };
+
+        ws.onerror = (ev) => {
+          setError({ isError: true, message: "Unexpected error"});
+        }
+      
+      }
+
     }
-  })
+  });
 
   return (
     <form.AppForm>

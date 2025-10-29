@@ -1,5 +1,7 @@
+import wssOrigin from "@/constants/wss-origin";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { AuthContextProvider } from "@/providers/AuthContextProvider";
+import { WebSocketProvider } from "@/providers/WebSocketProvider";
 import { Stack, useRouter } from "expo-router";
 import { useColorScheme } from "react-native";
 import { MD3DarkTheme as DarkTheme, IconButton, MD3LightTheme as LightTheme, PaperProvider, Text, useTheme } from "react-native-paper";
@@ -66,7 +68,9 @@ export default function RootLayout() {
   return (
     <PaperProvider theme={theme}>
       <AuthContextProvider>
-        <RootStack />
+        <WebSocketProvider wssUrl={wssOrigin}>
+          <RootStack />
+        </WebSocketProvider>
       </AuthContextProvider>
     </PaperProvider>
   );
