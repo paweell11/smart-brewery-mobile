@@ -2,12 +2,10 @@ import wssOrigin from "@/constants/wss-origin";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { AuthContextProvider } from "@/providers/AuthContextProvider";
 import { WebSocketProvider } from "@/providers/WebSocketProvider";
+import { ThemeModeProvider, useThemeMode } from "@/providers/ThemeModeProvider";
 import { Stack, useRouter } from "expo-router";
-import { useColorScheme } from "react-native";
-import { MD3DarkTheme as DarkTheme, IconButton, MD3LightTheme as LightTheme, PaperProvider, Text, useTheme } from "react-native-paper";
-import { darkThemeColors } from "../constants/darkThemeColors";
-import { lightThemeColors } from "../constants/lightThemeColors";
-
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { IconButton, PaperProvider, Text, useTheme } from "react-native-paper";
 
 function RootStack() {
   const router = useRouter();
@@ -16,40 +14,55 @@ function RootStack() {
 
   return (
     <Stack>
-      <Stack.Protected guard={isAuthenticated} >
-        <Stack.Screen name="(tabs)" 
-        options={{ headerShown: false }}
+      <Stack.Protected guard={isAuthenticated}>
+        <Stack.Screen
+          name="(tabs)"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="(settings)"
+          options={{ headerShown: false }}
         />
       </Stack.Protected>
 
-      <Stack.Protected guard={!isAuthenticated} >
-        <Stack.Screen 
-          name="sign-in" 
+      <Stack.Protected guard={!isAuthenticated}>
+        <Stack.Screen
+          name="sign-in"
           options={{
             headerStyle: {
-              backgroundColor: theme.colors.background
+              backgroundColor: theme.colors.background,
             },
             headerTitleAlign: "center",
-            headerTitle: props => <Text variant="headlineMedium">Logowanie</Text>,
+            headerTitle: () => (
+              <Text variant="headlineMedium">Logowanie</Text>
+            ),
           }}
         />
-        <Stack.Screen 
-          name="sign-up" 
+
+        <Stack.Screen
+          name="sign-up"
           options={{
-            title: "Rejestracja", 
+            title: "Rejestracja",
             headerTitleAlign: "center",
             headerStyle: {
               backgroundColor: theme.colors.background,
-              
             },
-            headerTitle: props => <Text variant="headlineMedium" style={{textAlign: "center"}}>Rejestracja</Text>,
-            headerLeft: props => 
-              <IconButton 
-                mode="contained" 
-                icon="arrow-left" 
-                style={{borderRadius: theme.roundness}}
+            headerTitle: () => (
+              <Text
+                variant="headlineMedium"
+                style={{ textAlign: "center" }}
+              >
+                Rejestracja
+              </Text>
+            ),
+            headerLeft: () => (
+              <IconButton
+                mode="contained"
+                icon="arrow-left"
+                style={{ borderRadius: theme.roundness }}
                 onPress={() => router.back()}
-              />,
+              />
+            ),
           }}
         />
       </Stack.Protected>
@@ -57,14 +70,13 @@ function RootStack() {
   );
 }
 
+function ThemedAppShell() {
+  const { theme, isHydrated } = useThemeMode();
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const router = useRouter();
-  const theme = colorScheme === "light" ? 
-    {...LightTheme, roundness: 2, colors: lightThemeColors.colors} : 
-    {...DarkTheme, roundness: 2, colors: darkThemeColors.colors};
-  
+  if (!isHydrated) {
+    return <GestureHandlerRootView style={{ flex: 1 }} />;
+  }
+
   return (
     <PaperProvider theme={theme}>
       <AuthContextProvider>
@@ -73,5 +85,15 @@ export default function RootLayout() {
         </WebSocketProvider>
       </AuthContextProvider>
     </PaperProvider>
+  );
+}
+
+export default function RootLayout() {
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeModeProvider>
+        <ThemedAppShell />
+      </ThemeModeProvider>
+    </GestureHandlerRootView>
   );
 }

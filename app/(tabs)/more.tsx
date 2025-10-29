@@ -1,24 +1,34 @@
-import { StyleSheet, Text, View } from "react-native";
+import * as React from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
+import AccountActionsCard from "../../components/AccountActionsCard";
 import FullWidthHeader from "../../components/FullWidthHeader";
+import ThemeSelectorCards from "../../components/ThemeSelectorCards";
 
 export default function MoreScreen() {
   return (
-    <View style={styles.container}>
-        <FullWidthHeader
-            title="Moje konto"
-            logoSource={require("../../assets/images/brewery-logo.png")}
-            align="left"
-            size="lg"
-        />
-      <Text>Ekran „More” – tutaj dodasz ustawienia itp.</Text>
+    <View style={styles.screen}>
+      <FullWidthHeader
+        title="Moje konto"
+        logoSource={require("../../assets/images/brewery-logo.png")}
+        align="left"
+        size="lg"
+      />
+
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        <ThemeSelectorCards />
+
+        <AccountActionsCard />
+      </ScrollView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    // justifyContent: "center",
+  screen: { flex: 1 },
+  content: {
+    paddingBottom: 32,
   },
 });
