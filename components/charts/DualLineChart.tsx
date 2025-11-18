@@ -1,4 +1,3 @@
-// DualLineChart.tsx
 import * as React from "react";
 import { View } from "react-native";
 import { LineChart } from "react-native-gifted-charts";

@@ -1,10 +1,8 @@
-// components/SensorDetailsModal.tsx
 import * as React from "react";
 import { StyleSheet, View } from "react-native";
 import { useTheme } from "react-native-paper";
 import PhDetails from "./sensor-details/PhDetails";
 import TemperatureDetails from "./sensor-details/TemperatureDetails";
-// import WeightDetails, HumidityDetails, PressureDetails ...
 
 type Props = {
   type: "temp" | "ph" | "weight" | "humidity" | "pressure";

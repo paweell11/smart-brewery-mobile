@@ -1,4 +1,3 @@
-// components/charts/BaseLineChart.tsx
 import * as React from "react";
 import { View } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
@@ -9,7 +8,7 @@ type Point = { value: number; label?: string };
 type Props = {
   data: Point[];
   height?: number;
-  maxValue?: number;   // tylko na górny zapas
+  maxValue?: number;   
 };
 
 export default function BaseLineChart({ data, height = 220, maxValue }: Props) {
@@ -30,9 +29,9 @@ export default function BaseLineChart({ data, height = 220, maxValue }: Props) {
           xAxisColor={theme.colors.outlineVariant}
           yAxisTextStyle={{ opacity: 0.7 }}
           xAxisLabelTextStyle={{ opacity: 0.7 }}
-          yAxisLabelWidth={32}   // ⬅️ stabilny lewy margines
+          yAxisLabelWidth={32}   
           initialSpacing={10}
-          endSpacing={28}        // ⬅️ więcej powietrza po prawej
+          endSpacing={28}        
           color1={theme.colors.primary}
           maxValue={maxValue}
           pointerConfig={{
