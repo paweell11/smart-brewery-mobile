@@ -2,15 +2,16 @@
 import * as React from "react";
 import { StyleSheet, View } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
-import { Text, useTheme } from "react-native-paper";
+import { SegmentedButtons, Text, useTheme } from "react-native-paper";
 
 type Pt = { value: number; label?: string };
 
-// stałe wspólne
-const Y_LABEL_W = 30;                 // szerokość etykiet osi Y
-const LEFT_PAD = 12;                  // lewy margines (initialSpacing)
-const RIGHT_PAD = Y_LABEL_W + LEFT_PAD; // bazowy prawy margines
+// stałe layoutu wykresu
+const Y_LABEL_W = 40;
+const LEFT_PAD = 10;
+const RIGHT_PAD = Y_LABEL_W + LEFT_PAD;
 
+// --- DANE NA SZTYWNO ---
 const INSIDE: Pt[] = [
   { value: 21.1, label: "06:00" },
   { value: 21.2, label: "06:30" },
@@ -83,15 +84,26 @@ const OUTSIDE: Pt[] = [
   { value: 18.7, label: "22:00" },
 ];
 
+// różnica ΔT = inside - outside (zakładamy te same znaczniki czasu)
+const DELTA: Pt[] = INSIDE.map((p, i) => ({
+  value: +(p.value - OUTSIDE[i].value).toFixed(1),
+  label: p.label,
+}));
+
 export default function TemperatureDetails() {
   const theme = useTheme();
   const [w, setW] = React.useState(0);
+  const [mode, setMode] = React.useState<"dual" | "delta">("dual");
 
-  // delikatny zapas u góry
-  const maxVal =
+  const maxDual =
     Math.max(...INSIDE.map(p => p.value), ...OUTSIDE.map(p => p.value)) + 0.4;
 
-  // "teraz" – ostatnie punkty + różnica
+  // skala dla ΔT – wystarczy górny zapas (na razie nie mamy wartości ujemnych)
+  const FIXED_MAX_DELTA = 3.0;
+  const Y_LABELS_DELTA = [
+    "0.0","0.3","0.6","0.9","1.2","1.5","1.8","2.1","2.4","2.7","3.0"
+  ];
+
   const nowInside = INSIDE[INSIDE.length - 1];
   const nowOutside = OUTSIDE[OUTSIDE.length - 1];
   const diff = nowInside.value - nowOutside.value;
@@ -101,25 +113,65 @@ export default function TemperatureDetails() {
     <View style={styles.wrap} onLayout={e => setW(e.nativeEvent.layout.width)}>
       <Text variant="titleLarge">Temperatura fermentacji</Text>
       <Text variant="bodySmall" style={{ opacity: 0.7, marginTop: 4 }}>
-        Wewnątrz vs otoczenie — dane poglądowe
+        {mode === "dual"
+          ? "Wewnątrz vs otoczenie"
+          : "Różnica temperatur (ΔT)"}
       </Text>
+
+      {/* przełącznik widoku */}
+      <SegmentedButtons
+        value={mode}
+        onValueChange={(v) => setMode(v as "dual" | "delta")}
+        style={{ marginTop: 10 }}
+        buttons={[
+          { value: "dual", label: "Dwie serie" },
+          { value: "delta", label: "Różnica" },
+        ]}
+      />
 
       {w > 0 && (
         <View style={{ marginTop: 12 }}>
           {(() => {
-            // przesunięcie w lewo proporcjonalne do szerokości (max 16–20 px)
-            const DELTA = Math.min(20, Math.round(w * 0.05));
-            const end = Math.max(18, RIGHT_PAD - DELTA);
+            // mocniejsze przesunięcie w lewo
+            const DELTA_SHIFT = Math.min(26, Math.round(w * 0.08));
+            const end = Math.max(10, RIGHT_PAD - DELTA_SHIFT);
 
+            if (mode === "dual") {
+              return (
+                <LineChart
+                  width={w}
+                  height={220}
+                  data={INSIDE}
+                  data2={OUTSIDE}
+                  curved
+                  thickness={3}
+                  thickness2={3}
+                  hideRules={false}
+                  yAxisLabelWidth={Y_LABEL_W}
+                  initialSpacing={LEFT_PAD}
+                  endSpacing={end}
+                  yAxisColor={theme.colors.outlineVariant}
+                  xAxisColor={theme.colors.outlineVariant}
+                  yAxisTextStyle={{ opacity: 0.7 }}
+                  xAxisLabelTextStyle={{ opacity: 0.7 }}
+                  color1={theme.colors.primary}
+                  color2={theme.colors.tertiary}
+                  maxValue={maxDual}
+                  scrollToEnd
+                  scrollAnimation={false}
+                  hideDataPoints
+                />
+              );
+            }
+
+            // tryb „Różnica”
             return (
               <LineChart
                 width={w}
                 height={220}
-                data={INSIDE}
-                data2={OUTSIDE}
+                data={DELTA}
                 curved
                 thickness={3}
-                thickness2={3}
                 hideRules={false}
                 yAxisLabelWidth={Y_LABEL_W}
                 initialSpacing={LEFT_PAD}
@@ -129,11 +181,15 @@ export default function TemperatureDetails() {
                 yAxisTextStyle={{ opacity: 0.7 }}
                 xAxisLabelTextStyle={{ opacity: 0.7 }}
                 color1={theme.colors.primary}
-                color2={theme.colors.tertiary}
-                maxValue={maxVal}
+                maxValue={FIXED_MAX_DELTA}
+                yAxisLabelTexts={Y_LABELS_DELTA}
+                noOfSections={Y_LABELS_DELTA.length - 1}
                 scrollToEnd
                 scrollAnimation={false}
                 hideDataPoints
+                // jeśli biblioteka wspiera, można podkreślić linię 0:
+                // referenceLine1Position={0}
+                // referenceLine1Color={theme.colors.outline}
               />
             );
           })()}
@@ -141,14 +197,21 @@ export default function TemperatureDetails() {
       )}
 
       {/* legenda */}
-      <View style={styles.legend}>
-        <View style={[styles.dot, { backgroundColor: theme.colors.primary }]} />
-        <Text style={{ marginRight: 16 }}>Wewnątrz</Text>
-        <View style={[styles.dot, { backgroundColor: theme.colors.tertiary }]} />
-        <Text>Otoczenie</Text>
-      </View>
+      {mode === "dual" ? (
+        <View style={styles.legend}>
+          <View style={[styles.dot, { backgroundColor: theme.colors.primary }]} />
+          <Text style={{ marginRight: 16 }}>Wewnątrz</Text>
+          <View style={[styles.dot, { backgroundColor: theme.colors.tertiary }]} />
+          <Text>Otoczenie</Text>
+        </View>
+      ) : (
+        <View style={styles.legend}>
+          <View style={[styles.dot, { backgroundColor: theme.colors.primary }]} />
+          <Text>ΔT (wewnątrz – otoczenie)</Text>
+        </View>
+      )}
 
-      {/* status „teraz” */}
+      {/* statystyki „teraz” – wspólne dla obu trybów */}
       <View style={styles.row}>
         <View style={styles.col}>
           <Text variant="labelSmall" style={{ opacity: 0.7 }}>Wewnątrz (teraz)</Text>
@@ -161,7 +224,7 @@ export default function TemperatureDetails() {
           <Text variant="bodySmall" style={{ opacity: 0.6 }}>{nowOutside.label}</Text>
         </View>
         <View style={styles.col}>
-          <Text variant="labelSmall" style={{ opacity: 0.7 }}>Różnica (teraz)</Text>
+          <Text variant="labelSmall" style={{ opacity: 0.7 }}>Różnica</Text>
           <Text variant="titleMedium">{diffStr}</Text>
           <Text variant="bodySmall" style={{ opacity: 0.6 }}>In–Out</Text>
         </View>
@@ -174,10 +237,6 @@ const styles = StyleSheet.create({
   wrap: { paddingRight: 0 },
   legend: { flexDirection: "row", alignItems: "center", marginTop: 8 },
   dot: { width: 10, height: 10, borderRadius: 6, marginRight: 6 },
-  row: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 12,
-  },
+  row: { flexDirection: "row", gap: 12, marginTop: 12 },
   col: { flex: 1 },
 });
