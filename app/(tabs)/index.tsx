@@ -1,26 +1,22 @@
 import * as React from "react";
 import { Dimensions, FlatList, StyleSheet, View } from "react-native";
-import { IconButton, Modal, Portal, Text, useTheme } from "react-native-paper";
+import { IconButton, Modal, Portal, useTheme } from "react-native-paper";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import FullWidthHeader from "../../components/FullWidthHeader";
+import SensorDetailsModal from "../../components/SensorDetailsModal";
 import TileCard from "../../components/TileCard";
 
-type Item = { id: string; title: string };
-const DATA: Item[] = [
-  { id: "1", title: "Kafelek A" },
-  { id: "2", title: "Kafelek B" },
-  { id: "3", title: "Kafelek C" },
-  { id: "4", title: "Kafelek D" },
-  { id: "11", title: "Kafelek A" },
-  { id: "12", title: "Kafelek B" },
-  { id: "13", title: "Kafelek C" },
-  { id: "14", title: "Kafelek D" },
-  { id: "21", title: "Kafelek A" },
-  { id: "22", title: "Kafelek B" },
-  { id: "23", title: "Kafelek C" },
-  { id: "24", title: "Kafelek D" },
-];
+type SensorType = "temp" | "ph" | "weight" | "humidity" | "pressure" | "outsideTemp";
+type Item = { id: string; title: string; type: SensorType };
 
+const DATA: Item[] = [
+  { id: "t1", title: "Temperatura (fermentor)", type: "temp" },
+  { id: "p1", title: "pH", type: "ph" },
+  { id: "w1", title: "Waga", type: "weight" },
+  { id: "to", title: "Temperatura otoczenia", type: "outsideTemp" },
+  { id: "h1", title: "Wilgotność otoczenia", type: "humidity" },
+  { id: "c1", title: "Ciśnienie otoczenia", type: "pressure" },
+];
 
 const BOTTOM_BAR_HEIGHT = 72;
 const V_MARGIN = 8;
@@ -34,21 +30,17 @@ export default function HomeScreen() {
   const [headerH, setHeaderH] = React.useState(0);
 
   const availableH =
-    winH
-    - headerH
-    - (BOTTOM_BAR_HEIGHT + insets.bottom)
-    - V_MARGIN * 2;
+    winH - headerH - (BOTTOM_BAR_HEIGHT + insets.bottom) - V_MARGIN * 2;
 
-
-  const MAX_H = Math.max(320, Math.min(availableH, winH * 0.88));
-  const MIN_H = Math.min(420, MAX_H);
+  const MAX_H = Math.max(320, Math.min(availableH, winH * 0.92));
+  const MIN_H = Math.min(560, MAX_H);
 
   return (
     <View style={styles.screen}>
       <FullWidthHeader
         title="Czujniki"
         align="center"
-        onMeasuredHeight={setHeaderH} 
+        onMeasuredHeight={setHeaderH}
       />
 
       <FlatList
@@ -76,7 +68,6 @@ export default function HomeScreen() {
             },
           ]}
         >
-          {/* X na stałe w prawym górnym */}
           <IconButton
             icon="close"
             onPress={() => setSelected(null)}
@@ -84,10 +75,11 @@ export default function HomeScreen() {
             accessibilityLabel="Zamknij"
           />
 
-          <Text variant="headlineSmall" style={{ marginBottom: 12 }}>
-            {selected?.title}
-          </Text>
-          <Text>Statystyki...</Text>
+          {selected && (
+            <SensorDetailsModal
+              type={selected.type === "outsideTemp" ? "temp" : selected.type}
+            />
+          )}
         </Modal>
       </Portal>
     </View>
@@ -96,17 +88,16 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  listContent: {
-    paddingTop: 16,    
-    paddingBottom: 24,
-  },
+  listContent: { paddingTop: 16, paddingBottom: 24 },
   modalContainer: {
     marginHorizontal: 16,
     borderRadius: 16,
     padding: 16,
+    paddingRight: 56,
     alignSelf: "center",
     width: "92%",
     position: "relative",
+    overflow: "hidden", 
   },
   closeBtn: {
     position: "absolute",
