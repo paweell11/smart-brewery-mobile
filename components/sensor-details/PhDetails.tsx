@@ -95,14 +95,14 @@ export default function PhDetails() {
           <Text variant="titleMedium">{PH_TREND_1H}</Text>
           <Text variant="bodySmall" style={{ opacity: 0.6 }}>Δ pH</Text>
         </View>
-        <View style={styles.col}>
+        {/* <View style={styles.col}>
           <Text variant="labelSmall" style={{ opacity: 0.7 }}>Średnia</Text>
           <Text variant="titleMedium">{PH_AVG}</Text>
           <Text variant="bodySmall" style={{ opacity: 0.6 }}>z zakresu</Text>
-        </View>
+        </View> */}
       </View>
 
-      <View style={[styles.row, { marginTop: 8 }]}>
+      {/* <View style={[styles.row, { marginTop: 8 }]}>
         <View style={styles.col}>
           <Text variant="labelSmall" style={{ opacity: 0.7 }}>Min</Text>
           <Text variant="titleMedium">{PH_MIN}</Text>
@@ -114,7 +114,7 @@ export default function PhDetails() {
           <Text variant="bodySmall" style={{ opacity: 0.6 }}>z zakresu</Text>
         </View>
         <View style={styles.col} />
-      </View>
+      </View> */}
     </View>
   );
 }
