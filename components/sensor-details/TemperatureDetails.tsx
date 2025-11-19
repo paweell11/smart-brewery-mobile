@@ -95,6 +95,7 @@ export default function TemperatureDetails() {
   const maxDual =
     Math.max(...INSIDE.map(p => p.value), ...OUTSIDE.map(p => p.value)) + 0.4;
 
+
   const FIXED_MAX_DELTA = 3.0;
   const Y_LABELS_DELTA = [
     "0.0","0.3","0.6","0.9","1.2","1.5","1.8","2.1","2.4","2.7","3.0"
@@ -128,6 +129,7 @@ export default function TemperatureDetails() {
       {w > 0 && (
         <View style={{ marginTop: 12 }}>
           {(() => {
+            // mocniejsze przesunięcie w lewo
             const DELTA_SHIFT = Math.min(26, Math.round(w * 0.08));
             const end = Math.max(10, RIGHT_PAD - DELTA_SHIFT);
 
