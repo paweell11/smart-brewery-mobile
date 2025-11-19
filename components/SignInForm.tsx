@@ -5,6 +5,7 @@ import { ErrorType } from "@/types";
 import { formOptions } from "@tanstack/react-form";
 import { View } from "react-native";
 import FromSubmitButton from "./FormSubmitButton";
+import { makeRequest } from "@/api/makeRequest";
 
 
 const signInFormOpts = formOptions({
@@ -17,41 +18,40 @@ const signInFormOpts = formOptions({
 
 export default function SignInForm({ setError }: { setError: (e: ErrorType) => void}) {
   const { setIsAuthenticated, setUserData } = useAuthContext();
-  const { ws, connectionStates } = useWebSocket();
-  const { isOpen } = connectionStates;
 
 
   const form = useAppForm({
     ...signInFormOpts,
-    onSubmit: ({ value }) => {
+    onSubmit: async ({ value }) => {
+      try {
+        const result = await makeRequest("/api/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(value)
+        });
+
+        const { token, user } = result;
+        const { id, firstName, lastName, email } = user;
+
+        setIsAuthenticated(true);
+        setUserData({
+          id,
+          firstName,
+          lastName,
+          email,
+        });
       
-      let loginData: Record<string, string> = {...value};
-      loginData["type"] = "login";
-
-      if (ws) {
-        
-        if (isOpen) {
-          ws.send(JSON.stringify(loginData));
-          console.log("Send:", loginData)
+      } catch (error) {
+        if (error instanceof Error) {
+          setError({
+            isError: true,
+            type: "basic",
+            message: error.message,
+          });
         }
-
-        ws.onmessage = (ev) => {
-          console.log("Received:", ev.data);
-          
-          const { type, firstName, lastName, email, error } = JSON.parse(ev.data);
-          if (type === "loginSuccess" && firstName && lastName && email) {
-            setIsAuthenticated(true);
-            setUserData({ firstName, lastName, email });
-            ws.close();
-          }
-
-          if (type === "error" && error) {
-            setError({ isError: true, type: "basic", message: error});
-          }
-        }
-
       }
-
     }
   });
 

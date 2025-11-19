@@ -59,9 +59,7 @@ export default function AuthLayout() {
   const [key, setKey] = useState(0);
 
   return (
-    <WebSocketProvider wssUrl={wssOrigin} key={key} setKey={setKey}>
-      <AuthStack />
-    </WebSocketProvider>
+    <AuthStack />
   );
 
 

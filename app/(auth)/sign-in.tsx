@@ -15,7 +15,6 @@ import { ErrorType } from "../../types";
 
 export default function SignIn() {
   const { isAuthenticated } = useAuthContext();
-  const { ws, connectionStates, connect } = useWebSocket();
   const [error, setError] = useState<ErrorType>({ isError: false });
   
   const headerHeight = useHeaderHeight();
@@ -23,19 +22,6 @@ export default function SignIn() {
   const theme = useTheme();
   const router = useRouter();
 
-
-
-  if (connectionStates.isClosed && !isAuthenticated && !error.isError) {
-    setError({ isError: true, type: "connection", message: "Utracono połączenie"});
-  }
-
-  if (ws) {
-    ws.onerror = (ev) => {
-      setError({ isError: true, type: "basic", message: `Niezidentyfikowany błąd ${ev}`});
-    }
-  }
-
-  console.log(connectionStates.isConnecting)
   
   return (
     <SafeAreaView
@@ -98,24 +84,6 @@ export default function SignIn() {
           onClose={() => setError({ isError: false })}
         />
       }
-
-      {
-        (error.isError && error.type === "connection") &&
-        <ErrorDialog 
-          message={error.message}
-          btnText={"Połącz"}
-          onClose={() => {
-            setError({ isError: false });
-            connect();
-          }}
-        />
-      }
-
-      {
-        (connectionStates.isConnecting) &&
-        <LoadingDialog />
-      }
-      
 
     </SafeAreaView>
   );

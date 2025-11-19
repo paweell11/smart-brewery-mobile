@@ -1,6 +1,7 @@
 import { createContext, ReactNode, useState } from "react";
 
 type UserData = {
+  id?: number;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -17,7 +18,7 @@ export const AuthContext = createContext<
 
 
 export function AuthContextProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(true);
   const [userData, setUserData] = useState<UserData>({});
 
   return (

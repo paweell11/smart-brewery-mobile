@@ -1,3 +1,4 @@
+import { makeRequest } from "@/api/makeRequest";
 import { useAppForm } from "@/hooks/form";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { useWebSocket } from "@/hooks/useWebSocket";
@@ -7,8 +8,6 @@ import FromSubmitButton from "./FormSubmitButton";
 
 export default function SignUpForm({ setError }: { setError: (e: ErrorType) => void }) {
   const { setIsAuthenticated, setUserData } = useAuthContext();
-  const { ws, connectionStates } = useWebSocket();
-  const { isOpen } = connectionStates;
 
 
   const form = useAppForm({
@@ -18,37 +17,36 @@ export default function SignUpForm({ setError }: { setError: (e: ErrorType) => v
       email: "",
       password: ""
     },
-    onSubmit: ({value}) => {
-      console.log(value);
+    onSubmit: async ({value}) => {
+      try {
+        const result = await makeRequest("/api/auth/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(value)
+        });
 
-      let registerData: Record<string, string> = {...value};
-      registerData["type"] = "register";
+        const { token, user } = result;
+        const { id, firstName, lastName, email } = user;
 
-      if (ws) {
-
-        if (isOpen) {
-          ws.send(JSON.stringify(registerData));
-          console.log("Send:", registerData);
-        }
-
-        ws.onmessage = (ev) => {
-          console.log("Received:", ev.data);
-          
-          const { type, firstName, lastName, email, error } = JSON.parse(ev.data);
-          if (type === "registerSuccess" && firstName && lastName && email) {
-            setIsAuthenticated(true);
-            setUserData({ firstName, lastName, email });
-            ws.close();
-          }
-
-          if (type === "error" && error) {
-            setError({ isError: true, message: error });
-          }
-
-        }
+        setIsAuthenticated(true);
+        setUserData({
+          id,
+          firstName,
+          lastName,
+          email,
+        });
       
+      } catch (error) {
+        if (error instanceof Error) {
+          setError({
+            isError: true,
+            type: "basic",
+            message: error.message,
+          });
+        }
       }
-
     }
   });
 
