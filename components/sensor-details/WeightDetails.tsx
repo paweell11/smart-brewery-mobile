@@ -66,9 +66,9 @@ export default function WeightDetails() {
 
   return (
     <View style={styles.wrap} onLayout={e => setW(e.nativeEvent.layout.width)}>
-      <Text variant="titleLarge">Masa (w czasie)</Text>
+      <Text variant="titleLarge">Masa fermentora</Text>
       <Text variant="bodySmall" style={{ opacity: 0.7, marginTop: 4 }}>
-        Okno {baseY.toFixed(1)}–{topY.toFixed(1)} kg (automatycznie dopasowane)
+        Waga - poglądowo
       </Text>
 
       {w > 0 && (

@@ -10,11 +10,11 @@ type SensorType = "temp" | "ph" | "insideTemp" | "weight" | "environment" ;
 type Item = { id: string; title: string; type: SensorType; iconSrc: string };
 
 const DATA: Item[] = [
-  { id: "t1", title: "Temperatura wew/zew", type: "temp", iconSrc: "thermometer" },
-  { id: "t2", title: "Temperatura wewnątrz fermentora", type: "insideTemp", iconSrc: "thermometer-water" },
-  { id: "p1", title: "pH", type: "ph", iconSrc: "ph" },
-  { id: "w1", title: "Waga", type: "weight", iconSrc: "weight" },
-  { id: "e1", title: "Wilgotność i ciśnienie", type: "environment", iconSrc: "water-percent" },
+  { id: "t1", title: "Temperatura fermentacji", type: "temp", iconSrc: "thermometer" },
+  { id: "t2", title: "Temperatura wewnętrzna", type: "insideTemp", iconSrc: "thermometer-water" },
+  { id: "p1", title: "pH fermentacji", type: "ph", iconSrc: "ph" },
+  { id: "w1", title: "Masa fermentora", type: "weight", iconSrc: "weight" },
+  { id: "e1", title: "Otoczenie: wilgotność i ciśnienie", type: "environment", iconSrc: "water-percent" },
 ];
 
 const BOTTOM_BAR_HEIGHT = 72;
