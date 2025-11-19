@@ -14,7 +14,7 @@ const DATA: Item[] = [
   { id: "t2", title: "Temperatura wewnątrz fermentora", type: "insideTemp" },
   { id: "p1", title: "pH", type: "ph" },
   { id: "w1", title: "Waga", type: "weight" },
-  { id: "e1", title: "Otoczenie", type: "environment" },
+  { id: "e1", title: "Wilgotność i ciśnienie", type: "environment" },
 ];
 
 const BOTTOM_BAR_HEIGHT = 72;

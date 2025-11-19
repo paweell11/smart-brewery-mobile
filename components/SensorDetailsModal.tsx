@@ -1,6 +1,7 @@
 import * as React from "react";
 import { StyleSheet, View } from "react-native";
 import { useTheme } from "react-native-paper";
+import EnvironmentDetails from "./sensor-details/EnvironmentDetails";
 import InsideTemperatureDetails from "./sensor-details/InsideTemperatureDetails";
 import PhDetails from "./sensor-details/PhDetails";
 import TemperatureDetails from "./sensor-details/TemperatureDetails";
@@ -18,6 +19,7 @@ export default function SensorDetailsModal({ type }: Props) {
       {type === "ph" && <PhDetails />}
       {type === "insideTemp" && <InsideTemperatureDetails />}
       {type === "weight" && <WeightDetails />}
+      {type === "environment" && <EnvironmentDetails />}
       {/* {type === "weight" && <WeightDetails />} itd. */}
     </View>
   );
