@@ -23,7 +23,7 @@ export default function AboutScreen() {
           variant="bodyMedium"
           style={[styles.listText, { color: theme.colors.onBackground }]}
         >
-          {"\u2022"} monitorować czujniki i status warzenia{"\n"}
+          {"\u2022"} monitorować rózne parametry warzonego piwa dzięki odczytom wartosci z czujników{"\n"}
         </Text>
       </ScrollView>
     </View>

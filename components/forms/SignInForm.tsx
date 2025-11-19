@@ -1,11 +1,10 @@
+import { makeRequest } from "@/api/makeRequest";
 import { useAppForm } from "@/hooks/form";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { useWebSocket } from "@/hooks/useWebSocket";
 import { ErrorType } from "@/types";
 import { formOptions } from "@tanstack/react-form";
 import { View } from "react-native";
-import FromSubmitButton from "./FormSubmitButton";
-import { makeRequest } from "@/api/makeRequest";
+import FromSubmitButton from "../FormSubmitButton";
 
 
 const signInFormOpts = formOptions({
@@ -103,7 +102,7 @@ export default function SignInForm({ setError }: { setError: (e: ErrorType) => v
           }
         </form.AppField>
 
-        <FromSubmitButton text={"Zaloguj się"}/>
+        <FromSubmitButton text={"Zaloguj się "}/>
 
       </View>
     </form.AppForm>

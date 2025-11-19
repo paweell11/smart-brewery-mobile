@@ -1,3 +1,4 @@
+import { useAuthContext } from "@/hooks/useAuthContext";
 import { useRouter } from "expo-router";
 import * as React from "react";
 import { StyleSheet, View } from "react-native";
@@ -6,6 +7,7 @@ import { Icon, Surface, Text, useTheme } from "react-native-paper";
 export default function AccountActionsCard() {
   const theme = useTheme();
   const router = useRouter();
+  const { setIsAuthenticated } = useAuthContext();
 
   const ROWS = [
     {
@@ -29,8 +31,8 @@ export default function AccountActionsCard() {
       label: "Wyloguj",
       icon: "logout",
       onPress: () => {
-        // TODO: wylogowanie
         console.log("Wyloguj kliknięty");
+        setIsAuthenticated(false);
       },
       tone: "destructive" as const,
       showChevron: false,

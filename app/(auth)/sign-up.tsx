@@ -1,8 +1,6 @@
 import ErrorDialog from "@/components/ErrorDialog";
-import LoadingDialog from "@/components/LoadingDialog";
-import SignUpForm from "@/components/SignUpForm";
+import SignUpForm from "@/components/forms/SignUpForm";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { useWebSocket } from "@/hooks/useWebSocket";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Image } from "expo-image";
 import { useRef, useState } from "react";

@@ -1,10 +1,9 @@
 import { makeRequest } from "@/api/makeRequest";
 import { useAppForm } from "@/hooks/form";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { useWebSocket } from "@/hooks/useWebSocket";
 import { ErrorType } from "@/types";
 import { View } from "react-native";
-import FromSubmitButton from "./FormSubmitButton";
+import FromSubmitButton from "../FormSubmitButton";
 
 export default function SignUpForm({ setError }: { setError: (e: ErrorType) => void }) {
   const { setIsAuthenticated, setUserData } = useAuthContext();

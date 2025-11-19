@@ -20,7 +20,7 @@ export default function FromSubmitButton({ style, text }: FormSubmitButtonProps)
             style={style}
             onPress={(e) => form.handleSubmit()}
           >
-            {text}
+            { text }
           </Button>
         )
       }
