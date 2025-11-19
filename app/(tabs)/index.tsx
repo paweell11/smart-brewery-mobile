@@ -6,11 +6,12 @@ import FullWidthHeader from "../../components/FullWidthHeader";
 import SensorDetailsModal from "../../components/SensorDetailsModal";
 import TileCard from "../../components/TileCard";
 
-type SensorType = "temp" | "ph" | "weight" | "humidity" | "pressure" | "outsideTemp";
+type SensorType = "temp" | "ph" | "insideTemp" | "weight" | "humidity" | "pressure" | "outsideTemp";
 type Item = { id: string; title: string; type: SensorType };
 
 const DATA: Item[] = [
-  { id: "t1", title: "Temperatura (fermentor)", type: "temp" },
+  { id: "t1", title: "Temperatura wew/zew", type: "temp" },
+  { id: "ti", title: "Temperatura wewnątrz fermentora", type: "insideTemp" },
   { id: "p1", title: "pH", type: "ph" },
   { id: "w1", title: "Waga", type: "weight" },
   { id: "to", title: "Temperatura otoczenia", type: "outsideTemp" },
