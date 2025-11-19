@@ -7,14 +7,14 @@ import SensorDetailsModal from "../../components/SensorDetailsModal";
 import TileCard from "../../components/TileCard";
 
 type SensorType = "temp" | "ph" | "insideTemp" | "weight" | "environment" ;
-type Item = { id: string; title: string; type: SensorType };
+type Item = { id: string; title: string; type: SensorType; iconSrc: string };
 
 const DATA: Item[] = [
-  { id: "t1", title: "Temperatura wew/zew", type: "temp" },
-  { id: "t2", title: "Temperatura wewnątrz fermentora", type: "insideTemp" },
-  { id: "p1", title: "pH", type: "ph" },
-  { id: "w1", title: "Waga", type: "weight" },
-  { id: "e1", title: "Wilgotność i ciśnienie", type: "environment" },
+  { id: "t1", title: "Temperatura wew/zew", type: "temp", iconSrc: "thermometer" },
+  { id: "t2", title: "Temperatura wewnątrz fermentora", type: "insideTemp", iconSrc: "thermometer-water" },
+  { id: "p1", title: "pH", type: "ph", iconSrc: "ph" },
+  { id: "w1", title: "Waga", type: "weight", iconSrc: "weight" },
+  { id: "e1", title: "Wilgotność i ciśnienie", type: "environment", iconSrc: "water-percent" },
 ];
 
 const BOTTOM_BAR_HEIGHT = 72;
@@ -43,7 +43,7 @@ export default function HomeScreen() {
         numColumns={1}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
-          <TileCard title={item.title} onPress={() => setSelected(item)} />
+          <TileCard title={item.title} iconSrc={item.iconSrc} onPress={() => setSelected(item)} />
         )}
       />
 
