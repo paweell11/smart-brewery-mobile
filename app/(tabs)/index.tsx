@@ -6,17 +6,15 @@ import FullWidthHeader from "../../components/FullWidthHeader";
 import SensorDetailsModal from "../../components/SensorDetailsModal";
 import TileCard from "../../components/TileCard";
 
-type SensorType = "temp" | "ph" | "insideTemp" | "weight" | "humidity" | "pressure" | "outsideTemp";
+type SensorType = "temp" | "ph" | "insideTemp" | "weight" | "environment" ;
 type Item = { id: string; title: string; type: SensorType };
 
 const DATA: Item[] = [
   { id: "t1", title: "Temperatura wew/zew", type: "temp" },
-  { id: "ti", title: "Temperatura wewnątrz fermentora", type: "insideTemp" },
+  { id: "t2", title: "Temperatura wewnątrz fermentora", type: "insideTemp" },
   { id: "p1", title: "pH", type: "ph" },
   { id: "w1", title: "Waga", type: "weight" },
-  { id: "to", title: "Temperatura otoczenia", type: "outsideTemp" },
-  { id: "h1", title: "Wilgotność otoczenia", type: "humidity" },
-  { id: "c1", title: "Ciśnienie otoczenia", type: "pressure" },
+  { id: "e1", title: "Otoczenie", type: "environment" },
 ];
 
 const BOTTOM_BAR_HEIGHT = 72;
@@ -38,12 +36,7 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.screen}>
-      <FullWidthHeader
-        title="Czujniki"
-        align="center"
-        onMeasuredHeight={setHeaderH}
-      />
-
+      <FullWidthHeader title="Czujniki" align="center" onMeasuredHeight={setHeaderH} />
       <FlatList
         data={DATA}
         keyExtractor={(it) => it.id}
@@ -78,7 +71,7 @@ export default function HomeScreen() {
 
           {selected && (
             <SensorDetailsModal
-              type={selected.type === "outsideTemp" ? "temp" : selected.type}
+              type={selected.type}
             />
           )}
         </Modal>

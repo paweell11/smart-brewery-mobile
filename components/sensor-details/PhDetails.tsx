@@ -80,14 +80,10 @@ export default function PhDetails() {
         </View>
       )}
 
-      {/* legenda */}
       <View style={styles.legend}>
         <View style={[styles.dot, { backgroundColor: theme.colors.primary }]} />
         <Text>pH</Text>
       </View>
-
-      {/* —— Statystyki w tym samym stylu co w Temperaturze —— */}
-      {/* Wiersz 1: pH (teraz) | Trend (1h) | Średnia */}
       <View style={styles.row}>
         <View style={styles.col}>
           <Text variant="labelSmall" style={{ opacity: 0.7 }}>pH (teraz)</Text>
@@ -106,7 +102,6 @@ export default function PhDetails() {
         </View>
       </View>
 
-      {/* Wiersz 2: Min | Max */}
       <View style={[styles.row, { marginTop: 8 }]}>
         <View style={styles.col}>
           <Text variant="labelSmall" style={{ opacity: 0.7 }}>Min</Text>
@@ -118,7 +113,6 @@ export default function PhDetails() {
           <Text variant="titleMedium">{PH_MAX}</Text>
           <Text variant="bodySmall" style={{ opacity: 0.6 }}>z zakresu</Text>
         </View>
-        {/* trzeci „slot” zostawiamy pusty, żeby układ był identyczny (3 kolumny) */}
         <View style={styles.col} />
       </View>
     </View>

@@ -4,9 +4,10 @@ import { useTheme } from "react-native-paper";
 import InsideTemperatureDetails from "./sensor-details/InsideTemperatureDetails";
 import PhDetails from "./sensor-details/PhDetails";
 import TemperatureDetails from "./sensor-details/TemperatureDetails";
+import WeightDetails from "./sensor-details/WeightDetails";
 
 type Props = {
-  type: "temp" | "ph" | "insideTemp" | "weight" | "humidity" | "pressure";
+  type: "temp" | "ph" | "insideTemp" | "weight" | "environment";
 };
 
 export default function SensorDetailsModal({ type }: Props) {
@@ -16,6 +17,7 @@ export default function SensorDetailsModal({ type }: Props) {
       {type === "temp" && <TemperatureDetails />}
       {type === "ph" && <PhDetails />}
       {type === "insideTemp" && <InsideTemperatureDetails />}
+      {type === "weight" && <WeightDetails />}
       {/* {type === "weight" && <WeightDetails />} itd. */}
     </View>
   );

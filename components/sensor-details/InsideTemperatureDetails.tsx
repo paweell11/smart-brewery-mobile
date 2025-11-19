@@ -1,4 +1,3 @@
-// components/sensor-details/InsideTemperatureDetails.tsx
 import * as React from "react";
 import { StyleSheet, View } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
@@ -6,7 +5,6 @@ import { Text, useTheme } from "react-native-paper";
 
 type Pt = { value: number; label?: string };
 
-// --- stałe skali / layoutu ---
 const Y_LABEL_W = 40;
 const LEFT_PAD = 10;
 const RIGHT_PAD = Y_LABEL_W + LEFT_PAD;
@@ -14,7 +12,6 @@ const FIXED_MAX = 30;
 const Y_LABELS = ["0", "5", "10", "15", "20", "25", "30"].map(v => `${v}°`);
 const CHART_H = 220;
 
-// --- dane poglądowe (wewnątrz) ---
 const INSIDE: Pt[] = [
   { value: 21.1, label: "06:00" }, { value: 21.2, label: "06:30" },
   { value: 21.4, label: "07:00" }, { value: 21.5, label: "07:30" },
@@ -35,11 +32,9 @@ const INSIDE: Pt[] = [
   { value: 21.2, label: "22:00" },
 ];
 
-// --- pas docelowy (dwie linie) ---
 const TARGET_MIN = 16;
 const TARGET_MAX = 24;
 
-// pomocnicze: z INSIDE robimy dwie „płaskie” serie na 24°C i 16°C
 const guidesFrom = (val: number) => INSIDE.map(p => ({ value: val, label: p.label }));
 const GUIDE_TOP = guidesFrom(TARGET_MAX);
 const GUIDE_BOTTOM = guidesFrom(TARGET_MIN);
@@ -48,7 +43,7 @@ export default function InsideTemperatureDetails() {
   const theme = useTheme();
   const [w, setW] = React.useState(0);
 
-  const vividGreen = "#16a34a"; // żywszy zielony (tailwind green-600)
+  const vividGreen = "#16a34a"; 
 
   const now = INSIDE[INSIDE.length - 1];
   const status =
@@ -79,13 +74,13 @@ export default function InsideTemperatureDetails() {
             <LineChart
                 width={w}
                 height={CHART_H}
-                data={INSIDE}           // główna seria
-                data2={GUIDE_TOP}       // 24°C
-                data3={GUIDE_BOTTOM}    // 16°C
+                data={INSIDE}           
+                data2={GUIDE_TOP}       
+                data3={GUIDE_BOTTOM}    
                 curved
-                thickness={3}           // główna linia
-                thickness2={5}          // ⬅️ grubiej dla 24°C
-                thickness3={5}          // ⬅️ grubiej dla 16°C
+                thickness={3}           
+                thickness2={5}          
+                thickness3={5}          
                 hideRules={false}
                 yAxisLabelWidth={Y_LABEL_W}
                 initialSpacing={LEFT_PAD}
@@ -110,13 +105,10 @@ export default function InsideTemperatureDetails() {
         </View>
       )}
 
-        {/* legenda */}
         <View style={styles.legend}>
-        {/* seria główna */}
         <View style={[styles.dot, { backgroundColor: theme.colors.primary }]} />
         <Text style={{ marginRight: 16 }}>Wewnątrz</Text>
 
-        {/* zakres 16–24 °C (górna/dolna w jednej pozycji) */}
         <View style={styles.legendItem}>
             <View style={styles.bandSample}>
             <View style={[styles.legendLine, { borderColor: vividGreen }]} />
@@ -127,7 +119,6 @@ export default function InsideTemperatureDetails() {
         </View>
 
 
-      {/* 3 pola informacyjne */}
       <View style={styles.row}>
         <View style={styles.col}>
           <Text variant="labelSmall" style={{ opacity: 0.7 }}>Wewnątrz (teraz)</Text>
@@ -152,10 +143,7 @@ export default function InsideTemperatureDetails() {
 }
 
 const styles = StyleSheet.create({
-  // kontener sekcji (używany na górze komponentu)
   wrap: { paddingRight: 0 },
-
-  // legenda pod wykresem
   legend: {
     flexDirection: "row",
     alignItems: "center",
@@ -172,13 +160,11 @@ const styles = StyleSheet.create({
     marginRight: 6,
   },
   legendLine: {
-    borderTopWidth: 5,       // gruba próbka
-    borderStyle: "dashed",   // przerywana
+    borderTopWidth: 5,       
+    borderStyle: "dashed",   
     borderRadius: 2,
   },
   legendLabel: {},
-
-  // 3 pola informacyjne pod legendą
   row: { flexDirection: "row", gap: 12, marginTop: 12 },
   col: { flex: 1 },
 });
