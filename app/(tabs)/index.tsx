@@ -71,7 +71,7 @@ export default function HomeScreen() {
   const MIN_H = Math.min(560, MAX_H);
 
   return (
-    <View style={styles.screen}>
+    <View style={{...styles.screen, backgroundColor: theme.colors.background}}>
       <FullWidthHeader title="Czujniki" align="center" onMeasuredHeight={setHeaderH} />
       <FlatList
         data={DATA}
