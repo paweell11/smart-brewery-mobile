@@ -149,8 +149,8 @@ export default function TemperatureDetails() {
                   endSpacing={end}
                   yAxisColor={theme.colors.outlineVariant}
                   xAxisColor={theme.colors.outlineVariant}
-                  yAxisTextStyle={{ opacity: 0.7, color: "white" }}
-                  xAxisLabelTextStyle={{ opacity: 0.7, color: "white" }}
+                  yAxisTextStyle={{ opacity: 0.7, color: theme.colors.onBackground }}
+                  xAxisLabelTextStyle={{ opacity: 0.7, color: theme.colors.onBackground }}
                   color1={theme.colors.primary}
                   color2={theme.colors.tertiary}
                   maxValue={maxDual}
@@ -175,8 +175,8 @@ export default function TemperatureDetails() {
                 endSpacing={end}
                 yAxisColor={theme.colors.outlineVariant}
                 xAxisColor={theme.colors.outlineVariant}
-                yAxisTextStyle={{ opacity: 0.7, color: "white" }}
-                xAxisLabelTextStyle={{ opacity: 0.7, color: "white" }}
+                yAxisTextStyle={{ opacity: 0.7, color: theme.colors.onBackground }}
+                xAxisLabelTextStyle={{ opacity: 0.7, color: theme.colors.onBackground }}
                 color1={theme.colors.primary}
                 maxValue={FIXED_MAX_DELTA}
                 yAxisLabelTexts={Y_LABELS_DELTA}

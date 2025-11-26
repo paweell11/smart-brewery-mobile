@@ -140,8 +140,8 @@ export default function InsideTemperatureDetails() {
                     endSpacing={end}
                     yAxisColor={theme.colors.outlineVariant}
                     xAxisColor={theme.colors.outlineVariant}
-                    yAxisTextStyle={{ opacity: 0.7, color: "white" }}
-                    xAxisLabelTextStyle={{ opacity: 0.7, color: "white" }}
+                    yAxisTextStyle={{ opacity: 0.7, color: theme.colors.onBackground }}
+                    xAxisLabelTextStyle={{ opacity: 0.7, color: theme.colors.onBackground }}
                     color={theme.colors.primary}
                     maxValue={FIXED_MAX}
                     yAxisLabelTexts={Y_LABELS}
