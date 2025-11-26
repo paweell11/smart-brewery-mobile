@@ -60,7 +60,7 @@ export default function ThemeSelectorCards() {
                 </View>
 
                 <Text
-                  variant="bodyLarge"
+                  variant="titleMedium"
                   style={{ color: theme.colors.onSurface }}
                 >
                   {opt.label}

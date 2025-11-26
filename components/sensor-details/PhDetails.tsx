@@ -65,8 +65,8 @@ export default function PhDetails() {
                 endSpacing={end}
                 yAxisColor={theme.colors.outlineVariant}
                 xAxisColor={theme.colors.outlineVariant}
-                yAxisTextStyle={{ opacity: 0.7 }}
-                xAxisLabelTextStyle={{ opacity: 0.7 }}
+                yAxisTextStyle={{ opacity: 0.7, color: theme.colors.onBackground }}
+                xAxisLabelTextStyle={{ opacity: 0.7, color: theme.colors.onBackground }}
                 color1={theme.colors.primary}
                 maxValue={maxVal}
                 yAxisLabelTexts={yAxisLabelTexts}

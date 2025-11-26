@@ -2,9 +2,14 @@ import * as React from "react";
 import { StyleSheet } from "react-native";
 import { Card, IconButton, Text } from "react-native-paper";
 
-type Props = { title: string; iconSrc: string; onPress: () => void };
+type Props = {
+  title: string;
+  iconSrc: string;
+  description: string;
+  onPress: () => void;
+};
 
-export default function TileCard({ title, iconSrc, onPress }: Props) {
+export default function TileCard({ title, iconSrc, description, onPress }: Props) {
   return (
     <Card style={styles.card} mode="contained" onPress={onPress}>
       <Card.Title
@@ -14,7 +19,7 @@ export default function TileCard({ title, iconSrc, onPress }: Props) {
       />
       <Card.Content>
         <Text variant="bodySmall" style={{ opacity: 0.7 }}>
-          Krótki opis…
+          { description }
         </Text>
       </Card.Content>
     </Card>

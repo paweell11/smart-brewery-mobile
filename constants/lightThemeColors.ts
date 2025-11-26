@@ -32,7 +32,7 @@ const lightThemeColors = {
     "elevation": {
       "level0": "transparent",
       "level1": "rgb(249, 243, 242)",
-      "level2": "rgb(245, 238, 235)",
+      "level2": "rgb(211, 192, 179)",
       "level3": "rgb(242, 232, 227)",
       "level4": "rgb(241, 231, 224)",
       "level5": "rgb(238, 227, 219)"
@@ -44,3 +44,4 @@ const lightThemeColors = {
 }
 
 export { lightThemeColors };
+

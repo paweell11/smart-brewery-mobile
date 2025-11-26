@@ -7,15 +7,51 @@ import SensorDetailsModal from "../../components/SensorDetailsModal";
 import TileCard from "../../components/TileCard";
 
 type SensorType = "temp" | "ph" | "insideTemp" | "weight" | "environment" ;
-type Item = { id: string; title: string; type: SensorType; iconSrc: string };
+type Item = { id: string; title: string; type: SensorType; iconSrc: string; description: string };
 
 const DATA: Item[] = [
-  { id: "t1", title: "Temperatura fermentacji", type: "temp", iconSrc: "thermometer" },
-  { id: "t2", title: "Temperatura wewnętrzna", type: "insideTemp", iconSrc: "thermometer-water" },
-  { id: "p1", title: "pH fermentacji", type: "ph", iconSrc: "ph" },
-  { id: "w1", title: "Masa fermentora", type: "weight", iconSrc: "weight" },
-  { id: "e1", title: "Otoczenie: wilgotność i ciśnienie", type: "environment", iconSrc: "water-percent" },
+  {
+    id: "t1",
+    title: "Temperatura fermentacji",
+    type: "temp",
+    iconSrc: "thermometer",
+    description:
+      "Zestawienie temperatury brzeczki z temperatura na zewnątrz fermentora. Kluczowe parametry wpływające na przebieg fermentacji i profil smakowy piwa."
+  },
+  {
+    id: "t2",
+    title: "Temperatura wewnętrzna",
+    type: "insideTemp",
+    iconSrc: "thermometer-water",
+    description:
+      "Temperatura wewnątrz komory fermentacyjnej. Pozwala ocenić pracę systemu chłodzenia lub ogrzewania."
+  },
+  {
+    id: "p1",
+    title: "pH fermentacji",
+    type: "ph",
+    iconSrc: "ph",
+    description:
+      "Wskaźnik kwasowości brzeczki. Zmiany pH odzwierciedlają aktywność drożdży i etapy fermentacji."
+  },
+  {
+    id: "w1",
+    title: "Masa brzeczki",
+    type: "weight",
+    iconSrc: "weight",
+    description:
+      "Masa brzeczki. Pozwala monitorować poziom piwa oraz ewentualne ubytki podczas fermentacji."
+  },
+  {
+    id: "e1",
+    title: "Otoczenie: wilgotność i ciśnienie",
+    type: "environment",
+    iconSrc: "water-percent",
+    description:
+      "Warunki środowiskowe wokół fermentora: wilgotność i ciśnienie powietrza. Parametry te mogą wpływać na stabilność układu i pracę czujników."
+  }
 ];
+
 
 const BOTTOM_BAR_HEIGHT = 72;
 const V_MARGIN = 8;
@@ -35,7 +71,7 @@ export default function HomeScreen() {
   const MIN_H = Math.min(560, MAX_H);
 
   return (
-    <View style={styles.screen}>
+    <View style={{...styles.screen, backgroundColor: theme.colors.background}}>
       <FullWidthHeader title="Czujniki" align="center" onMeasuredHeight={setHeaderH} />
       <FlatList
         data={DATA}
@@ -43,7 +79,7 @@ export default function HomeScreen() {
         numColumns={1}
         contentContainerStyle={styles.listContent}
         renderItem={({ item }) => (
-          <TileCard title={item.title} iconSrc={item.iconSrc} onPress={() => setSelected(item)} />
+          <TileCard title={item.title} iconSrc={item.iconSrc} description={item.description} onPress={() => setSelected(item)} />
         )}
       />
 
