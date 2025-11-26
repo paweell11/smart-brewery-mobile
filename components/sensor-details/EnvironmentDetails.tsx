@@ -83,8 +83,8 @@ export default function EnvironmentDetails() {
                   endSpacing={end}
                   yAxisColor={theme.colors.outlineVariant}
                   xAxisColor={theme.colors.outlineVariant}
-                  yAxisTextStyle={{ opacity: 0.7 }}
-                  xAxisLabelTextStyle={{ opacity: 0.7 }}
+                  yAxisTextStyle={{ opacity: 0.7, color: "white" }}
+                  xAxisLabelTextStyle={{ opacity: 0.7, color: "white" }}
                   color1={humidityColor}
                   maxValue={100}
                   noOfSections={10}
@@ -110,8 +110,8 @@ export default function EnvironmentDetails() {
                 endSpacing={end}
                 yAxisColor={theme.colors.outlineVariant}
                 xAxisColor={theme.colors.outlineVariant}
-                yAxisTextStyle={{ opacity: 0.7 }}
-                xAxisLabelTextStyle={{ opacity: 0.7 }}
+                yAxisTextStyle={{ opacity: 0.7, color: "white" }}
+                xAxisLabelTextStyle={{ opacity: 0.7, color: "white" }}
                 color1={pressureColor}
                 maxValue={P_SPAN}                         // 0..60
                 yAxisLabelTexts={PRESSURE_Y_LABELS}       // „980..1040”
