@@ -1,33 +1,32 @@
+import { useStorage } from "@/hooks/useStorage";
 import { createContext, ReactNode, useState } from "react";
-
-type UserData = {
-  id?: number;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-};
 
 export const AuthContext = createContext<
   {
+    logIn: (accessToken: string | null) => void;
+    logOut: () => void;
+    accessToken: string | null;
+    isLoading: boolean;
     isAuthenticated: boolean;
-    setIsAuthenticated: (isAuthenticated: boolean) => void;
-    userData: UserData;
-    setUserData: (userData: UserData) => void;
   } | null
 >(null);
 
 
 export function AuthContextProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(true);
-  const [userData, setUserData] = useState<UserData>({});
+  const { storageState, setStorageValue } = useStorage("accessToken");
 
   return (
     <AuthContext.Provider 
       value={{
-        isAuthenticated, 
-        setIsAuthenticated: (isAuthenticated) => setIsAuthenticated(isAuthenticated),
-        userData: userData,
-        setUserData: (userData) => setUserData(userData),
+        logIn: (accessToken) => {
+          setStorageValue(accessToken);
+        },
+        logOut: () => {
+          setStorageValue(null);
+        },
+        accessToken: storageState.value,
+        isLoading: storageState.isLoading,
+        isAuthenticated: (storageState.value === null) ? false : true,
       }}
     >
       {children}
