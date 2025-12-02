@@ -1,19 +1,13 @@
-import ErrorDialog from "@/components/ErrorDialog";
 import SignUpForm from "@/components/forms/SignUpForm";
-import { useAuthContext } from "@/hooks/useAuthContext";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { Image } from "expo-image";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { KeyboardAvoidingView, ScrollView, View } from "react-native";
 import { Text, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { ErrorType } from "../../types";
 
 
 export default function SignUp() {
-  const { isAuthenticated } = useAuthContext();
-  const [error, setError] = useState<ErrorType>({ isError: false });
-  
   const headerHeight = useHeaderHeight();
   const {current: frHeaderHeight} = useRef(headerHeight); // frist render header height
   const theme = useTheme();
@@ -53,19 +47,10 @@ export default function SignUp() {
       <KeyboardAvoidingView behavior="height" keyboardVerticalOffset={frHeaderHeight + 5}>
         <ScrollView>
           <View>
-            <SignUpForm setError={(e: ErrorType) => setError(e)} />
+            <SignUpForm />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {
-        (error.isError && error.type === "basic") &&
-        <ErrorDialog 
-          message={error.message}
-          btnText="Zamknij"
-          onClose={() => setError({ isError: false })}
-        />
-      }
     
     </SafeAreaView>
   );

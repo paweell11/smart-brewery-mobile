@@ -1,24 +1,24 @@
+import { HttpError } from "@/api/HttpError";
 import ErrorDialog from "@/components/ErrorDialog";
 import UserForm from "@/components/forms/UserForm";
+import LoadingDialog from "@/components/LoadingDialog";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { ErrorType } from "@/types";
+import { useUserInfo } from "@/hooks/useUserInfo";
 import { useHeaderHeight } from "@react-navigation/elements";
+import { useRouter } from "expo-router";
 import * as React from "react";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from "react-native";
 import { Avatar, Text, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MyProfileScreen() {
+  const router = useRouter();
+  const { logOut } = useAuthContext();
   const theme = useTheme();
   const headerHeight = useHeaderHeight();
   const {current: frHeaderHeight} = useRef(headerHeight); // frist render header height
-
-  const [error, setError] = useState<ErrorType>({ isError: false });
-  const { userData } = useAuthContext();
-  const { firstName = "Michał", lastName = "Lestan", email = "m.l@ml.pl" } = userData;
-  const initials = firstName[0].concat(lastName[0]);
-
+  const { data, isSuccess, isPending, isError, error } = useUserInfo();
 
   return (
     <SafeAreaView
@@ -32,40 +32,54 @@ export default function MyProfileScreen() {
         height: "100%"
       }}
     >
-      <Avatar.Text
-        style={{
-          marginTop: 0,
-          marginLeft: "auto",
-          marginRight: "auto"
-        }}
-        size={100}
-        label={initials}
-      />
-
-      <Text variant="titleMedium" style={{paddingTop: 30, paddingBottom: 10, textAlign: "center"}}>
-        Edytuj swoje dane osobowe, e-mail oraz hasło.
-      </Text>
-
-      <KeyboardAvoidingView behavior="height" keyboardVerticalOffset={frHeaderHeight + 5}>
-        <ScrollView>
-          <View>
-            <UserForm setError={(e: ErrorType) => setError(e)}/>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      {
+        (isPending) && 
+        <LoadingDialog title="Pobieranie..." icon="progress-download" />
+      }
 
       {
-        (error.isError && error.type === "basic") &&
+        (isError) && 
         <ErrorDialog 
-          message={error.message}
-          btnText={"Zamknij"}
-          onClose={() => setError({ isError: false })}
+          messages={[error.message]}
+          btnText="Zamknij"
+          onClose={() => {
+            if (error instanceof HttpError && error.status === 401) {
+              logOut();
+            } else {
+              router.back();
+            }
+          }}
         />
       }
 
-      
-    </SafeAreaView>
+      {
+        (isSuccess) &&
+        <>
+          <Avatar.Text
+            style={{
+              marginTop: 0,
+              marginLeft: "auto",
+              marginRight: "auto"
+            }}
+            size={100}
+            label={data.firstName[0] + data.lastName[0]}
+          />
 
+          <Text variant="titleMedium" style={{paddingTop: 30, paddingBottom: 10, textAlign: "center"}}>
+            Edytuj swoje dane osobowe, e-mail oraz hasło.
+          </Text>
+
+          <KeyboardAvoidingView behavior="height" keyboardVerticalOffset={frHeaderHeight + 5}>
+            <ScrollView>
+              <View>
+                <UserForm />
+              </View>
+            </ScrollView>
+          </KeyboardAvoidingView>        
+        </>
+      }
+
+    </SafeAreaView>
   );
 }
 
