@@ -7,7 +7,7 @@ import { Icon, Surface, Text, useTheme } from "react-native-paper";
 export default function AccountActionsCard() {
   const theme = useTheme();
   const router = useRouter();
-  const { setIsAuthenticated } = useAuthContext();
+  const { logOut } = useAuthContext();
 
   const ROWS = [
     {
@@ -32,7 +32,7 @@ export default function AccountActionsCard() {
       icon: "logout",
       onPress: () => {
         console.log("Wyloguj kliknięty");
-        setIsAuthenticated(false);
+        logOut();
       },
       tone: "destructive" as const,
       showChevron: false,

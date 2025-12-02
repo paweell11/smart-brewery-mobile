@@ -1,15 +1,16 @@
 import { useFieldContext } from "@/hooks/form-context";
 import { useState } from "react";
-import { StyleProp, TextStyle, View } from "react-native";
+import { KeyboardTypeOptions, StyleProp, TextStyle, View } from "react-native";
 import { HelperText, TextInput } from "react-native-paper";
 
 type FormTextFieldProps = {
   label: string;
   style?: StyleProp<TextStyle>;
   togglePasswordBtn?: boolean;
+  keyboardType?: KeyboardTypeOptions;
 }
 
-export function FormTextField({ label, style, togglePasswordBtn }: FormTextFieldProps) {
+export function FormTextField({ label, style, togglePasswordBtn, keyboardType }: FormTextFieldProps) {
   const field = useFieldContext();
   const [secure, setSecure] = useState(() => !togglePasswordBtn ? false : true);
   const value = field.state.value as string ?? undefined;
@@ -18,6 +19,7 @@ export function FormTextField({ label, style, togglePasswordBtn }: FormTextField
     <View>
       <TextInput
         mode="outlined"
+        keyboardType={keyboardType}
         label={label}
         style={style}
         onChangeText={(text) => {
