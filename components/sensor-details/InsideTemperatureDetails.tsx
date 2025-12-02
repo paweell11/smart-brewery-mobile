@@ -20,13 +20,15 @@ const BG_RIGHT_EXTEND = 40;
 const SAFE_RIGHT_MARGIN = 0;
 
 // Stała do korekty szerokości ScrollView (rozszerzenie paska przewijania do krawędzi)
-// Zwiększamy do 100 zgodnie z preferencją
 const CONTAINER_PAD = 100;
+
+// Definicja typów zakresów
+type RangeType = "1D" | "3D" | "7D" | "2T" | "4T";
 
 // --- POMOCNICZE FUNKCJE DO GENEROWANIA DANYCH (SYMULACJA BACKENDU) ---
 const generateMockData = (hours: number, intervalMinutes: number) => {
   const points = [];
-  const count = (hours * 60) / intervalMinutes;
+  const count = Math.floor((hours * 60) / intervalMinutes);
   const now = new Date();
 
   // Generujemy dane wstecz od "teraz"
@@ -35,7 +37,11 @@ const generateMockData = (hours: number, intervalMinutes: number) => {
       now.getTime() - (count - 1 - i) * intervalMinutes * 60000
     );
     const baseTemp = 21;
-    const fluctuation = Math.sin(i / 10) * 1.5 + (Math.random() * 0.4 - 0.2);
+    // Symulacja wolnych zmian temperatury (fermentacja) + dobowe wahania
+    const fluctuation =
+      Math.sin(i / 20) * 1.0 + // Dłuższy trend
+      Math.sin(i / 5) * 0.3 + // Krótkie wahania
+      (Math.random() * 0.2 - 0.1);
 
     points.push({
       timestamp: time,
@@ -45,8 +51,13 @@ const generateMockData = (hours: number, intervalMinutes: number) => {
   return points;
 };
 
-const RAW_DATA_24H = generateMockData(24, 30);
-const RAW_DATA_3D = generateMockData(72, 60);
+// Generujemy dane dla różnych zakresów
+// Im dłuższy zakres, tym rzadszy interwał próbkowania, aby nie generować tysięcy punktów
+const RAW_DATA_1D = generateMockData(24, 30); // Co 30 min
+const RAW_DATA_3D = generateMockData(72, 60); // Co 1h
+const RAW_DATA_7D = generateMockData(168, 120); // 7 dni, co 2h
+const RAW_DATA_2T = generateMockData(336, 240); // 14 dni (2 tyg), co 4h
+const RAW_DATA_4T = generateMockData(672, 360); // 28 dni (4 tyg), co 6h
 
 // --- FORMATOWANIE DATY ---
 const formatDateTime = (date: Date) => {
@@ -63,8 +74,8 @@ const formatDateTime = (date: Date) => {
 
 // --- LOGIKA PRZYGOTOWANIA DANYCH DLA WYKRESU (FRONTEND) ---
 const prepareDataForChart = (
-  rawData: typeof RAW_DATA_24H,
-  range: "1D" | "3D",
+  rawData: { timestamp: Date; value: number }[],
+  range: RangeType,
   spacing: number
 ) => {
   const labelWidth = 60;
@@ -72,10 +83,32 @@ const prepareDataForChart = (
 
   return rawData.map((item, index) => {
     let showLabel = false;
-    if (range === "1D") {
-      if (index % 4 === 0) showLabel = true;
-    } else if (range === "3D") {
-      if (index % 6 === 0) showLabel = true;
+
+    // Logika zagęszczenia etykiet na osi X w zależności od zakresu.
+    // CEL: Utrzymać podobną odległość wizualną (piksele) między etykietami.
+    // 1D: spacing 20 * 4 = 80px
+    // Reszta: spacing 12 * 6 = 72px (bardzo zbliżone)
+    switch (range) {
+      case "1D":
+        // Co 4. punkt
+        if (index % 4 === 0) showLabel = true;
+        break;
+      case "3D":
+        // Co 6. punkt
+        if (index % 6 === 0) showLabel = true;
+        break;
+      case "7D":
+        // Zmieniono z 12 na 6, aby zagęścić etykiety
+        if (index % 6 === 0) showLabel = true;
+        break;
+      case "2T":
+        // Zmieniono z 12 na 6, aby zagęścić etykiety
+        if (index % 6 === 0) showLabel = true;
+        break;
+      case "4T":
+        // Zmieniono z 16 na 6, aby zagęścić etykiety
+        if (index % 6 === 0) showLabel = true;
+        break;
     }
 
     let labelComponent = undefined;
@@ -109,12 +142,34 @@ const prepareDataForChart = (
 export default function InsideTemperatureDetails() {
   const theme = useTheme();
   const [w, setW] = React.useState(0);
-  const [selectedRange, setSelectedRange] = React.useState<"1D" | "3D">("1D");
+  const [selectedRange, setSelectedRange] = React.useState<RangeType>("1D");
 
   const vividGreen = "#16a34a";
+  // Dla 1D dajemy szerzej (20), dla reszty ciaśniej (12), żeby zmieścić więcej historii
   const spacing = selectedRange === "1D" ? 20 : 12;
 
-  const currentRawData = selectedRange === "1D" ? RAW_DATA_24H : RAW_DATA_3D;
+  // Wybór odpowiedniego zestawu danych
+  let currentRawData;
+  switch (selectedRange) {
+    case "1D":
+      currentRawData = RAW_DATA_1D;
+      break;
+    case "3D":
+      currentRawData = RAW_DATA_3D;
+      break;
+    case "7D":
+      currentRawData = RAW_DATA_7D;
+      break;
+    case "2T":
+      currentRawData = RAW_DATA_2T;
+      break;
+    case "4T":
+      currentRawData = RAW_DATA_4T;
+      break;
+    default:
+      currentRawData = RAW_DATA_1D;
+  }
+
   const chartData = React.useMemo(
     () => prepareDataForChart(currentRawData, selectedRange, spacing),
     [currentRawData, selectedRange, spacing]
@@ -139,10 +194,7 @@ export default function InsideTemperatureDetails() {
 
   return (
     <ScrollView
-      // Ujemny margines wyciąga ScrollView na boki, niwelując "szparę" przy pasku przewijania
-      // WAŻNE: Usunięto width: '100%' z styles.wrap, aby negative margin mógł faktycznie rozszerzyć widok
       style={[styles.wrap, { marginHorizontal: -CONTAINER_PAD }]}
-      // Padding wewnątrz przywraca treść na właściwe miejsce
       contentContainerStyle={{
         paddingHorizontal: CONTAINER_PAD,
         paddingBottom: 20,
@@ -164,7 +216,7 @@ export default function InsideTemperatureDetails() {
       </View>
 
       <View style={styles.rangeContainer}>
-        {(["1D", "3D"] as const).map((range) => {
+        {(["1D", "3D", "7D", "2T", "4T"] as const).map((range) => {
           const isActive = selectedRange === range;
           return (
             <TouchableOpacity
@@ -172,8 +224,6 @@ export default function InsideTemperatureDetails() {
               onPress={() => setSelectedRange(range)}
               style={[
                 styles.rangeButton,
-                // Używamy kolorów z theme zamiast szarego #f0f0f0
-                // Dzięki temu w trybie ciemnym przycisk będzie ciemnoszary, a nie biały
                 { backgroundColor: theme.colors.surfaceVariant },
                 isActive && { backgroundColor: theme.colors.primaryContainer },
               ]}
@@ -181,7 +231,6 @@ export default function InsideTemperatureDetails() {
               <Text
                 style={[
                   styles.rangeText,
-                  // Kolor tekstu również z theme
                   { color: theme.colors.onSurfaceVariant },
                   isActive && {
                     color: theme.colors.onPrimaryContainer,
@@ -199,17 +248,14 @@ export default function InsideTemperatureDetails() {
       {w > 0 && (
         <View
           style={{
-            marginTop: 10,
+            marginTop: 20,
             position: "relative",
             overflow: "visible",
             width: "100%",
           }}
         >
           {(() => {
-            // Obliczamy szerokość wykresu:
-            // Całkowita szerokość (w) minus paddingi kontenera, aby wykres był równo z tekstem
             const chartWidth = w - 2 * CONTAINER_PAD - SAFE_RIGHT_MARGIN;
-
             const chartDrawAreaWidth = chartWidth - Y_LABEL_W + BG_RIGHT_EXTEND;
 
             const pxPerDegree = CHART_H / FIXED_MAX;
@@ -218,7 +264,6 @@ export default function InsideTemperatureDetails() {
             const bandHeightBase = (TARGET_MAX - TARGET_MIN) * pxPerDegree;
             const bandHeight = bandHeightBase + BG_HEIGHT_CORRECTION;
 
-            // Style dla linii przerywanych
             const dashedLineStyle = {
               position: "absolute" as const,
               left: Y_LABEL_W,
@@ -226,28 +271,22 @@ export default function InsideTemperatureDetails() {
               borderTopWidth: 1,
               borderColor: vividGreen,
               borderStyle: "dashed" as const,
-              // Zmiana Z-Index na 0 (najniższa warstwa)
               zIndex: 0,
               elevation: 0,
             };
 
-            // Style dla etykiet tekstowych linii
             const labelTextStyle = {
               position: "absolute" as const,
               left: Y_LABEL_W,
               color: vividGreen,
               fontWeight: "bold" as const,
               fontSize: 13,
-              // Zmiana Z-Index na 0 (najniższa warstwa)
               zIndex: 0,
               elevation: 0,
             };
 
             return (
               <>
-                {/* --- WARSTWA TŁA I LINII (POD SPODEM - zIndex 0) --- */}
-
-                {/* ZIELONE TŁO */}
                 <View
                   style={{
                     position: "absolute",
@@ -261,13 +300,11 @@ export default function InsideTemperatureDetails() {
                   }}
                 />
 
-                {/* LINIA MAX + ETYKIETA */}
                 <View style={[dashedLineStyle, { top: topOffset }]} />
                 <Text style={[labelTextStyle, { top: topOffset - 20 }]}>
                   Max {TARGET_MAX}°C
                 </Text>
 
-                {/* LINIA MIN + ETYKIETA */}
                 <View
                   style={[dashedLineStyle, { top: topOffset + bandHeight }]}
                 />
@@ -277,8 +314,6 @@ export default function InsideTemperatureDetails() {
                   Min {TARGET_MIN}°C
                 </Text>
 
-                {/* --- WARSTWA WYKRESU (NA WIERZCHU - zIndex 10) --- */}
-                {/* Obudowujemy LineChart w View z wysokim zIndex, żeby tooltip w nim zawarty przykrył wszystko pod spodem */}
                 <View style={{ zIndex: 10, elevation: 10 }}>
                   <LineChart
                     key={`${w}-${selectedRange}`}
@@ -286,7 +321,6 @@ export default function InsideTemperatureDetails() {
                     height={CHART_H}
                     data={chartData}
                     spacing={spacing}
-                    // WYŁĄCZAMY WBUDOWANE LINIE REFERENCYJNE (Rysujemy je ręcznie wyżej)
                     showReferenceLine1={false}
                     showReferenceLine2={false}
                     curved
@@ -297,7 +331,6 @@ export default function InsideTemperatureDetails() {
                     endSpacing={0}
                     yAxisColor={theme.colors.outlineVariant}
                     xAxisColor={theme.colors.outlineVariant}
-                    // Zmiana koloru tekstu osi Y na zgodny z motywem (biały w dark mode)
                     yAxisTextStyle={{
                       opacity: 0.7,
                       color: theme.colors.onSurface,
@@ -313,7 +346,6 @@ export default function InsideTemperatureDetails() {
                     scrollToEnd
                     scrollAnimation={false}
                     hideDataPoints={true}
-                    // --- KONFIGURACJA TOOLTIPA ---
                     pointerConfig={{
                       pointerStripHeight: CHART_H,
                       pointerStripColor: theme.colors.outlineVariant,
@@ -321,11 +353,9 @@ export default function InsideTemperatureDetails() {
                       pointerColor: theme.colors.primary,
                       radius: 4,
                       pointerLabelWidth: 100,
-                      // Zmniejszono wysokość kontenera, aby dymek był bliżej
                       pointerLabelHeight: 60,
                       activatePointersOnLongPress: true,
                       autoAdjustPointerLabelPosition: false,
-                      // Zmniejszono przesunięcie (bliżej punktu)
                       shiftPointerLabelY: 45,
 
                       pointerLabelComponent: (items: any) => {
@@ -336,7 +366,6 @@ export default function InsideTemperatureDetails() {
                             style={{
                               height: 60,
                               width: 100,
-                              // Ustawiamy dymek na dole kontenera, blisko punktu
                               justifyContent: "flex-end",
                               alignItems: "center",
                             }}
@@ -381,7 +410,6 @@ export default function InsideTemperatureDetails() {
         </View>
       )}
 
-      {/* INSTRUKCJA OBSŁUGI GESTÓW */}
       <View style={{ alignItems: "center", marginTop: 8 }}>
         <Text variant="labelSmall" style={{ opacity: 0.5 }}>
           Przytrzymaj wykres, aby sprawdzić punkt
@@ -443,6 +471,8 @@ const styles = StyleSheet.create({
   },
   rangeContainer: {
     flexDirection: "row",
+    // Dodano wrapowanie, aby przyciski zmieściły się na małych ekranach
+    flexWrap: "wrap",
     justifyContent: "center",
     marginBottom: 8,
     gap: 8,
