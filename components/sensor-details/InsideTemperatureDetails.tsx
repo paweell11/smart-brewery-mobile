@@ -1,5 +1,5 @@
 import * as React from "react";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
 import { Text, useTheme } from "react-native-paper";
 
@@ -17,7 +17,11 @@ const TARGET_MAX = 24;
 const BG_TOP_SHIFT = 10;
 const BG_HEIGHT_CORRECTION = 0;
 const BG_RIGHT_EXTEND = 40;
-const SAFE_RIGHT_MARGIN = 0; // Margines, żeby ostatnia etykieta się nie ucinała
+const SAFE_RIGHT_MARGIN = 0;
+
+// Stała do korekty szerokości ScrollView (rozszerzenie paska przewijania do krawędzi)
+// Zwiększamy do 100 zgodnie z preferencją
+const CONTAINER_PAD = 100;
 
 // --- POMOCNICZE FUNKCJE DO GENEROWANIA DANYCH (SYMULACJA BACKENDU) ---
 const generateMockData = (hours: number, intervalMinutes: number) => {
@@ -133,24 +137,16 @@ export default function InsideTemperatureDetails() {
     1
   )} °C do ${closer}`;
 
-  const refLineConfig = {
-    color: vividGreen,
-    thickness: 1,
-    type: "dashed" as const,
-    dashWidth: 10,
-    dashGap: 8,
-    labelText: "",
-    labelTextStyle: {
-      color: vividGreen,
-      fontSize: 13,
-      fontWeight: "700",
-      marginBottom: 4,
-    },
-  };
-
   return (
-    <View
-      style={styles.wrap}
+    <ScrollView
+      // Ujemny margines wyciąga ScrollView na boki, niwelując "szparę" przy pasku przewijania
+      // WAŻNE: Usunięto width: '100%' z styles.wrap, aby negative margin mógł faktycznie rozszerzyć widok
+      style={[styles.wrap, { marginHorizontal: -CONTAINER_PAD }]}
+      // Padding wewnątrz przywraca treść na właściwe miejsce
+      contentContainerStyle={{
+        paddingHorizontal: CONTAINER_PAD,
+        paddingBottom: 20,
+      }}
       onLayout={(e) => {
         const width = e.nativeEvent.layout.width;
         if (width > 0 && Math.abs(w - width) > 1) {
@@ -176,12 +172,17 @@ export default function InsideTemperatureDetails() {
               onPress={() => setSelectedRange(range)}
               style={[
                 styles.rangeButton,
+                // Używamy kolorów z theme zamiast szarego #f0f0f0
+                // Dzięki temu w trybie ciemnym przycisk będzie ciemnoszary, a nie biały
+                { backgroundColor: theme.colors.surfaceVariant },
                 isActive && { backgroundColor: theme.colors.primaryContainer },
               ]}
             >
               <Text
                 style={[
                   styles.rangeText,
+                  // Kolor tekstu również z theme
+                  { color: theme.colors.onSurfaceVariant },
                   isActive && {
                     color: theme.colors.onPrimaryContainer,
                     fontWeight: "bold",
@@ -197,13 +198,18 @@ export default function InsideTemperatureDetails() {
 
       {w > 0 && (
         <View
-          style={{ marginTop: 12, position: "relative", overflow: "visible" }}
+          style={{
+            marginTop: 10,
+            position: "relative",
+            overflow: "visible",
+            width: "100%",
+          }}
         >
           {(() => {
-            // Obliczamy szerokość wykresu z uwzględnieniem bezpiecznego marginesu na ostatnią etykietę
-            const chartWidth = w - SAFE_RIGHT_MARGIN;
+            // Obliczamy szerokość wykresu:
+            // Całkowita szerokość (w) minus paddingi kontenera, aby wykres był równo z tekstem
+            const chartWidth = w - 2 * CONTAINER_PAD - SAFE_RIGHT_MARGIN;
 
-            // Szerokość tła synchronizujemy z obszarem rysowania wykresu
             const chartDrawAreaWidth = chartWidth - Y_LABEL_W + BG_RIGHT_EXTEND;
 
             const pxPerDegree = CHART_H / FIXED_MAX;
@@ -212,8 +218,35 @@ export default function InsideTemperatureDetails() {
             const bandHeightBase = (TARGET_MAX - TARGET_MIN) * pxPerDegree;
             const bandHeight = bandHeightBase + BG_HEIGHT_CORRECTION;
 
+            // Style dla linii przerywanych
+            const dashedLineStyle = {
+              position: "absolute" as const,
+              left: Y_LABEL_W,
+              width: chartDrawAreaWidth,
+              borderTopWidth: 1,
+              borderColor: vividGreen,
+              borderStyle: "dashed" as const,
+              // Zmiana Z-Index na 0 (najniższa warstwa)
+              zIndex: 0,
+              elevation: 0,
+            };
+
+            // Style dla etykiet tekstowych linii
+            const labelTextStyle = {
+              position: "absolute" as const,
+              left: Y_LABEL_W,
+              color: vividGreen,
+              fontWeight: "bold" as const,
+              fontSize: 13,
+              // Zmiana Z-Index na 0 (najniższa warstwa)
+              zIndex: 0,
+              elevation: 0,
+            };
+
             return (
               <>
+                {/* --- WARSTWA TŁA I LINII (POD SPODEM - zIndex 0) --- */}
+
                 {/* ZIELONE TŁO */}
                 <View
                   style={{
@@ -224,105 +257,124 @@ export default function InsideTemperatureDetails() {
                     height: bandHeight,
                     backgroundColor: "rgba(22, 163, 74, 0.12)",
                     zIndex: 0,
+                    elevation: 0,
                   }}
                 />
 
-                <LineChart
-                  key={`${w}-${selectedRange}`}
-                  width={chartWidth}
-                  height={CHART_H}
-                  data={chartData}
-                  spacing={spacing}
-                  // LINIE REFERENCYJNE
-                  showReferenceLine1
-                  referenceLine1Position={TARGET_MAX}
-                  referenceLine1Config={{
-                    ...refLineConfig,
-                    labelText: `Max ${TARGET_MAX}°C`,
-                  }}
-                  showReferenceLine2
-                  referenceLine2Position={TARGET_MIN}
-                  referenceLine2Config={{
-                    ...refLineConfig,
-                    labelText: `Min ${TARGET_MIN}°C`,
-                  }}
-                  curved
-                  thickness={3}
-                  hideRules={false}
-                  yAxisLabelWidth={Y_LABEL_W}
-                  initialSpacing={LEFT_PAD}
-                  endSpacing={0}
-                  yAxisColor={theme.colors.outlineVariant}
-                  xAxisColor={theme.colors.outlineVariant}
-                  yAxisTextStyle={{ opacity: 0.7 }}
-                  xAxisLabelTextStyle={{ opacity: 0.7 }}
-                  color={theme.colors.primary}
-                  maxValue={FIXED_MAX}
-                  yAxisLabelTexts={Y_LABELS}
-                  noOfSections={Y_LABELS.length - 1}
-                  scrollToEnd
-                  scrollAnimation={false}
-                  hideDataPoints={true}
-                  // --- KONFIGURACJA TOOLTIPA ---
-                  pointerConfig={{
-                    pointerStripHeight: CHART_H,
-                    pointerStripColor: theme.colors.outlineVariant,
-                    pointerStripWidth: 2,
-                    pointerColor: theme.colors.primary,
-                    radius: 4,
-                    // Dajemy dużo miejsca na dymek
-                    pointerLabelWidth: 100,
-                    pointerLabelHeight: 90,
-                    // KLUCZOWE DLA PRZEWIJANIA: true (wymaga przytrzymania palca)
-                    activatePointersOnLongPress: true,
-                    // KLUCZOWE DLA WIDOCZNOŚCI: true (niech biblioteka sama ustawi pozycję, żeby nie ucięło)
-                    autoAdjustPointerLabelPosition: true,
+                {/* LINIA MAX + ETYKIETA */}
+                <View style={[dashedLineStyle, { top: topOffset }]} />
+                <Text style={[labelTextStyle, { top: topOffset - 20 }]}>
+                  Max {TARGET_MAX}°C
+                </Text>
 
-                    pointerLabelComponent: (items: any) => {
-                      const item = items[0];
-                      const { full } = formatDateTime(item.timestamp);
-                      return (
-                        <View
-                          style={{
-                            height: 90,
-                            width: 100,
-                            justifyContent: "center",
-                            alignItems: "center",
-                          }}
-                        >
+                {/* LINIA MIN + ETYKIETA */}
+                <View
+                  style={[dashedLineStyle, { top: topOffset + bandHeight }]}
+                />
+                <Text
+                  style={[labelTextStyle, { top: topOffset + bandHeight - 20 }]}
+                >
+                  Min {TARGET_MIN}°C
+                </Text>
+
+                {/* --- WARSTWA WYKRESU (NA WIERZCHU - zIndex 10) --- */}
+                {/* Obudowujemy LineChart w View z wysokim zIndex, żeby tooltip w nim zawarty przykrył wszystko pod spodem */}
+                <View style={{ zIndex: 10, elevation: 10 }}>
+                  <LineChart
+                    key={`${w}-${selectedRange}`}
+                    width={chartWidth}
+                    height={CHART_H}
+                    data={chartData}
+                    spacing={spacing}
+                    // WYŁĄCZAMY WBUDOWANE LINIE REFERENCYJNE (Rysujemy je ręcznie wyżej)
+                    showReferenceLine1={false}
+                    showReferenceLine2={false}
+                    curved
+                    thickness={3}
+                    hideRules={false}
+                    yAxisLabelWidth={Y_LABEL_W}
+                    initialSpacing={LEFT_PAD}
+                    endSpacing={0}
+                    yAxisColor={theme.colors.outlineVariant}
+                    xAxisColor={theme.colors.outlineVariant}
+                    // Zmiana koloru tekstu osi Y na zgodny z motywem (biały w dark mode)
+                    yAxisTextStyle={{
+                      opacity: 0.7,
+                      color: theme.colors.onSurface,
+                    }}
+                    xAxisLabelTextStyle={{
+                      opacity: 0.7,
+                      color: theme.colors.onSurface,
+                    }}
+                    color={theme.colors.primary}
+                    maxValue={FIXED_MAX}
+                    yAxisLabelTexts={Y_LABELS}
+                    noOfSections={Y_LABELS.length - 1}
+                    scrollToEnd
+                    scrollAnimation={false}
+                    hideDataPoints={true}
+                    // --- KONFIGURACJA TOOLTIPA ---
+                    pointerConfig={{
+                      pointerStripHeight: CHART_H,
+                      pointerStripColor: theme.colors.outlineVariant,
+                      pointerStripWidth: 2,
+                      pointerColor: theme.colors.primary,
+                      radius: 4,
+                      pointerLabelWidth: 100,
+                      // Zmniejszono wysokość kontenera, aby dymek był bliżej
+                      pointerLabelHeight: 60,
+                      activatePointersOnLongPress: true,
+                      autoAdjustPointerLabelPosition: false,
+                      // Zmniejszono przesunięcie (bliżej punktu)
+                      shiftPointerLabelY: 45,
+
+                      pointerLabelComponent: (items: any) => {
+                        const item = items[0];
+                        const { full } = formatDateTime(item.timestamp);
+                        return (
                           <View
                             style={{
-                              backgroundColor: theme.colors.inverseSurface,
-                              borderRadius: 8,
-                              paddingHorizontal: 8,
-                              paddingVertical: 4,
+                              height: 60,
+                              width: 100,
+                              // Ustawiamy dymek na dole kontenera, blisko punktu
+                              justifyContent: "flex-end",
+                              alignItems: "center",
                             }}
                           >
-                            <Text
+                            <View
                               style={{
-                                color: theme.colors.inverseOnSurface,
-                                fontWeight: "bold",
-                                fontSize: 14,
-                                textAlign: "center",
+                                backgroundColor: theme.colors.inverseSurface,
+                                borderRadius: 8,
+                                paddingHorizontal: 8,
+                                paddingVertical: 4,
                               }}
                             >
-                              {item.value}°C
-                            </Text>
-                            <Text
-                              style={{
-                                color: theme.colors.inverseOnSurface,
-                                fontSize: 10,
-                                textAlign: "center",
-                              }}
-                            >
-                              {full}
-                            </Text>
+                              <Text
+                                style={{
+                                  color: theme.colors.inverseOnSurface,
+                                  fontWeight: "bold",
+                                  fontSize: 14,
+                                  textAlign: "center",
+                                }}
+                              >
+                                {item.value}°C
+                              </Text>
+                              <Text
+                                style={{
+                                  color: theme.colors.inverseOnSurface,
+                                  fontSize: 10,
+                                  textAlign: "center",
+                                }}
+                              >
+                                {full}
+                              </Text>
+                            </View>
                           </View>
-                        </View>
-                      );
-                    },
-                  }}
-                />
+                        );
+                      },
+                    }}
+                  />
+                </View>
               </>
             );
           })()}
@@ -377,7 +429,7 @@ export default function InsideTemperatureDetails() {
           </Text>
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
@@ -391,7 +443,7 @@ const styles = StyleSheet.create({
   },
   rangeContainer: {
     flexDirection: "row",
-    justifyContent: "flex-end",
+    justifyContent: "center",
     marginBottom: 8,
     gap: 8,
   },
@@ -399,7 +451,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: "#f0f0f0",
   },
   rangeText: {
     fontSize: 12,
@@ -422,6 +473,14 @@ const styles = StyleSheet.create({
     borderStyle: "dashed",
   },
   legendLabel: {},
-  row: { flexDirection: "row", gap: 12, marginTop: 12 },
-  col: { flex: 1 },
+  row: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginTop: 12,
+  },
+  col: {
+    flexGrow: 1,
+    minWidth: 100,
+  },
 });
