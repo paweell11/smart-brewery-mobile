@@ -1,4 +1,5 @@
 import wssOrigin from "@/constants/wss-origin";
+import { useAuthContext } from "@/hooks/useAuthContext";
 import { WebSocketProvider } from "@/providers/WebSocketProvider";
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";

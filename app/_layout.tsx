@@ -1,6 +1,7 @@
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { AuthContextProvider } from "@/providers/AuthContextProvider";
 import { ThemeModeProvider, useThemeMode } from "@/providers/ThemeModeProvider";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PaperProvider } from "react-native-paper";
@@ -11,6 +12,13 @@ function RootStack() {
 
   return (
     <Stack>
+      <Stack.Protected guard={!isAuthenticated}>
+        <Stack.Screen 
+          name="(auth)"
+          options={{ headerShown: false }}
+        />
+      </Stack.Protected>
+
       <Stack.Protected guard={isAuthenticated}>
         <Stack.Screen
           name="(tabs)"
@@ -22,17 +30,9 @@ function RootStack() {
           options={{ headerShown: false }}
         />
       </Stack.Protected>
-
-      <Stack.Protected guard={!isAuthenticated}>
-        <Stack.Screen 
-          name="(auth)"
-          options={{ headerShown: false }}
-        />
-      </Stack.Protected>
     </Stack>
   );
 }
-
 
 
 function ThemedAppShell() {
@@ -51,11 +51,16 @@ function ThemedAppShell() {
   );
 }
 
+
+const queryClient = new QueryClient();
+
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeModeProvider>
-        <ThemedAppShell />
+        <QueryClientProvider client={queryClient} >
+          <ThemedAppShell />
+        </QueryClientProvider>
       </ThemeModeProvider>
     </GestureHandlerRootView>
   );

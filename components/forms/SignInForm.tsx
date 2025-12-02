@@ -1,111 +1,121 @@
-import { makeRequest } from "@/api/makeRequest";
 import { useAppForm } from "@/hooks/form";
 import { useAuthContext } from "@/hooks/useAuthContext";
-import { ErrorType } from "@/types";
 import { formOptions } from "@tanstack/react-form";
+import { useMutation } from "@tanstack/react-query";
 import { View } from "react-native";
 import FromSubmitButton from "../FormSubmitButton";
+import { apiClient } from "@/api/apiClientInstance";
+import { Login } from "@/api/types";
+import ErrorDialog from "../ErrorDialog";
+import LoadingDialog from "../LoadingDialog";
 
 
 const signInFormOpts = formOptions({
   defaultValues: {
-    "email": "",
+    "username": "",
     "password": "",
   }
 })
 
 
-export default function SignInForm({ setError }: { setError: (e: ErrorType) => void}) {
-  const { setIsAuthenticated, setUserData } = useAuthContext();
-
+export default function SignInForm() {
+  const { logIn, accessToken: token } = useAuthContext();
+  
+  const mutation = useMutation({
+    mutationFn: (value: any) => {
+      return apiClient.makeRequest<Login>("/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: value
+      });
+    },
+  });
 
   const form = useAppForm({
     ...signInFormOpts,
     onSubmit: async ({ value }) => {
       try {
-        const result = await makeRequest("/api/auth/login", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(value)
-        });
-
-        const { token, user } = result;
-        const { id, firstName, lastName, email } = user;
-
-        setIsAuthenticated(true);
-        setUserData({
-          id,
-          firstName,
-          lastName,
-          email,
-        });
-      
+        const { access_token: accessToken } = await mutation.mutateAsync(value);
+        logIn(accessToken);
       } catch (error) {
-        if (error instanceof Error) {
-          setError({
-            isError: true,
-            type: "basic",
-            message: error.message,
-          });
-        }
+        if (error instanceof Error)
+          console.error("Login error", error.message);
       }
     }
   });
 
+  console.log("AccessToken:", token);
+
   return (
-    <form.AppForm>
-      <View>
-        <form.AppField
-          name="email"
-          validators={{
-            onChange: ({value}) => {
-              if (!value) {
-                return "Pole nie może być puste."
-              }
+    <>
+      <form.AppForm>
+        <View>
+          <form.AppField
+            name="username"
+            validators={{
+              onChange: ({value}) => {
+                if (!value) {
+                  return "Pole nie może być puste."
+                }
 
-              if (!value.includes("@")) {
-                return "Niepoprawny adres e-mail."
-              }
-            } 
-          }}
-        >
-          {
-            (field) => 
-              <field.FormTextField
-                label="Adres e-mail" 
-              />
-          }
-        </form.AppField>
-
-        <form.AppField
-          name="password"
-          validators={{
-            onChange: ({value}) => {
-              if (!value) {
-                return "Pole nie może być puste."
-              }
-
-              if (value.length < 5) {
-                return "Hasło zbyt krótkie."
-              }
+                if (!value.includes("@")) {
+                  return "Niepoprawny adres e-mail.";
+                }
+              } 
+            }}
+          >
+            {
+              (field) => 
+                <field.FormTextField
+                  label="E-mail"
+                  keyboardType="email-address"
+                />
             }
-          }}
-        >
-          {
-            (field) => 
-              <field.FormTextField 
-                label="Hasło"
-                togglePasswordBtn={true}
-              />
-          }
-        </form.AppField>
+          </form.AppField>
 
-        <FromSubmitButton text={"Zaloguj się "}/>
+          <form.AppField
+            name="password"
+            validators={{
+              onChange: ({value}) => {
+                if (!value) {
+                  return "Pole nie może być puste."
+                }
 
-      </View>
-    </form.AppForm>
+                if (value.length < 5) {
+                  return "Hasło zbyt krótkie."
+                }
+              }
+            }}
+          >
+            {
+              (field) => 
+                <field.FormTextField 
+                  label="Hasło"
+                  togglePasswordBtn={true}
+                />
+            }
+          </form.AppField>
 
+          <FromSubmitButton text={"Zaloguj się "}/>
+
+        </View>
+      </form.AppForm>
+      
+      {
+        (mutation.isPending) && 
+        <LoadingDialog title="Wysyłanie..." icon="progress-upload" />
+      }
+
+      {
+        (mutation.isError) &&
+        <ErrorDialog 
+          messages={[mutation.error.message]}
+          btnText={"Zamknij"}
+          onClose={() => mutation.reset()}
+        />
+      }
+    </>
   );
 } 
