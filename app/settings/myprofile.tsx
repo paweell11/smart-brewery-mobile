@@ -6,13 +6,13 @@ import { useAuthContext } from "@/hooks/useAuthContext";
 import { useUserInfo } from "@/hooks/useUserInfo";
 import { useHeaderHeight } from "@react-navigation/elements";
 import { useRouter } from "expo-router";
-import * as React from "react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { KeyboardAvoidingView, ScrollView, StyleSheet, View } from "react-native";
 import { Avatar, Text, useTheme } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function MyProfileScreen() {
+  const [egg, setEgg] = useState(false);
   const router = useRouter();
   const { logOut } = useAuthContext();
   const theme = useTheme();
@@ -55,15 +55,33 @@ export default function MyProfileScreen() {
       {
         (isSuccess) &&
         <>
-          <Avatar.Text
-            style={{
-              marginTop: 0,
-              marginLeft: "auto",
-              marginRight: "auto"
-            }}
-            size={100}
-            label={data.firstName[0] + data.lastName[0]}
-          />
+          <View onTouchStart={() => setEgg(prev => !prev)}>
+            {
+              (!egg) &&
+              <Avatar.Text
+                style={{
+                  marginTop: 0,
+                  marginLeft: "auto",
+                  marginRight: "auto"
+                }}
+                size={100}
+                label={data.firstName[0] + data.lastName[0]}
+              />
+            }
+
+            {
+              (egg) &&
+              <Avatar.Image
+                style={{
+                  marginTop: 0,
+                  marginLeft: "auto",
+                  marginRight: "auto"
+                }}
+                size={100}
+                source={require("@/assets/images/egg.gif")}
+              />
+            }
+          </View>
 
           <Text variant="titleMedium" style={{paddingTop: 30, paddingBottom: 10, textAlign: "center"}}>
             Edytuj swoje dane osobowe, e-mail oraz hasło.
