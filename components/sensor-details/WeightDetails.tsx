@@ -1,109 +1,358 @@
 import * as React from "react";
-import { StyleSheet, View } from "react-native";
+import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
 import { Text, useTheme } from "react-native-paper";
 
-type Pt = { value: number; label?: string };
-
-const Y_LABEL_W = 44;
+// --- KONFIGURACJA WYKRESU ---
+const Y_LABEL_W = 40;
 const LEFT_PAD = 10;
-const RIGHT_PAD = Y_LABEL_W + LEFT_PAD;
 const CHART_H = 220;
+// Stała do korekty szerokości ScrollView
+const CONTAINER_PAD = 100;
+const SAFE_RIGHT_MARGIN = 0;
+const BG_RIGHT_EXTEND = 40;
 
-const WEIGHT: Pt[] = [
-  { value: 23.10, label: "06:00" }, { value: 23.06, label: "06:30" },
-  { value: 23.02, label: "07:00" }, { value: 22.98, label: "07:30" },
-  { value: 22.94, label: "08:00" }, { value: 22.91, label: "08:30" },
-  { value: 22.88, label: "09:00" }, { value: 22.86, label: "09:30" },
-  { value: 22.84, label: "10:00" }, { value: 22.83, label: "10:30" },
-  { value: 22.82, label: "11:00" }, { value: 22.80, label: "11:30" },
-  { value: 22.79, label: "12:00" }, { value: 22.78, label: "12:30" },
-  { value: 22.77, label: "13:00" }, { value: 22.76, label: "13:30" },
-  { value: 22.75, label: "14:00" }, { value: 22.73, label: "14:30" },
-  { value: 22.71, label: "15:00" }, { value: 22.69, label: "15:30" },
-  { value: 22.68, label: "16:00" }, { value: 22.66, label: "16:30" },
-  { value: 22.64, label: "17:00" }, { value: 22.63, label: "17:30" },
-  { value: 22.62, label: "18:00" }, { value: 22.61, label: "18:30" },
-  { value: 22.60, label: "19:00" }, { value: 22.59, label: "19:30" },
-  { value: 22.58, label: "20:00" }, { value: 22.57, label: "20:30" },
-  { value: 22.56, label: "21:00" }, { value: 22.55, label: "21:30" },
-  { value: 22.54, label: "22:00" },
+// Konfiguracja skali Wagi (50 do 70)
+const WEIGHT_MIN_Y = 50;
+// Zakres wartości (70 - 50 = 20)
+const WEIGHT_RANGE = 20;
+// Etykiety co 2 (50, 52, 54... 70)
+const Y_LABELS = [
+  "50",
+  "52",
+  "54",
+  "56",
+  "58",
+  "60",
+  "62",
+  "64",
+  "66",
+  "68",
+  "70",
 ];
 
-const STEP = 0.1;      
-const PADDING = 0.2;   
+// Definicja typów zakresów
+type RangeType = "1D" | "3D" | "7D" | "2T" | "4T";
 
-function roundDown(v: number, step: number) {
-  return Math.floor(v / step) * step;
-}
-function roundUp(v: number, step: number) {
-  return Math.ceil(v / step) * step;
-}
+// --- POMOCNICZE FUNKCJE DO GENEROWANIA DANYCH ---
+const generateWeightMockData = (hours: number, intervalMinutes: number) => {
+  const points = [];
+  const count = Math.floor((hours * 60) / intervalMinutes);
+  const now = new Date();
+
+  for (let i = 0; i < count; i++) {
+    const time = new Date(
+      now.getTime() - (count - 1 - i) * intervalMinutes * 60000
+    );
+
+    // Symulacja spadku wagi (fermentacja)
+    // Start ok 65kg, spadek powolny
+    const progress = i / count;
+    const baseWeight = 65.0 - progress * 2.5; // Spadek o ok 2.5kg w czasie
+    const fluctuation = Math.random() * 0.05 - 0.025; // Małe szumy wagi
+
+    points.push({
+      timestamp: time,
+      value: parseFloat((baseWeight + fluctuation).toFixed(2)),
+    });
+  }
+  return points;
+};
+
+const RAW_DATA_1D = generateWeightMockData(24, 30);
+const RAW_DATA_3D = generateWeightMockData(72, 60);
+const RAW_DATA_7D = generateWeightMockData(168, 120);
+const RAW_DATA_2T = generateWeightMockData(336, 240);
+const RAW_DATA_4T = generateWeightMockData(672, 360);
+
+// --- FORMATOWANIE DATY ---
+const formatDateTime = (date: Date) => {
+  const d = date.getDate().toString().padStart(2, "0");
+  const m = (date.getMonth() + 1).toString().padStart(2, "0");
+  const h = date.getHours().toString().padStart(2, "0");
+  const min = date.getMinutes().toString().padStart(2, "0");
+  return {
+    dateStr: `${d}.${m}`,
+    timeStr: `${h}:${min}`,
+    full: `${d}.${m} ${h}:${min}`,
+  };
+};
+
+// --- LOGIKA PRZYGOTOWANIA DANYCH ---
+const prepareDataForChart = (
+  rawData: { timestamp: Date; value: number }[],
+  range: RangeType,
+  spacing: number
+) => {
+  const labelWidth = 60;
+  const labelShift = spacing / 2 - labelWidth / 2;
+
+  return rawData.map((item, index) => {
+    let showLabel = false;
+    if (range === "1D") {
+      if (index % 4 === 0) showLabel = true;
+    } else {
+      if (index % 6 === 0) showLabel = true;
+    }
+
+    let labelComponent = undefined;
+
+    if (showLabel) {
+      const { dateStr, timeStr } = formatDateTime(item.timestamp);
+      labelComponent = () => (
+        <View
+          style={{
+            width: labelWidth,
+            marginLeft: labelShift,
+            alignItems: "center",
+          }}
+        >
+          <Text style={{ fontSize: 9, opacity: 0.8, fontWeight: "bold" }}>
+            {dateStr}
+          </Text>
+          <Text style={{ fontSize: 9, opacity: 0.6 }}>{timeStr}</Text>
+        </View>
+      );
+    }
+
+    return {
+      value: item.value,
+      timestamp: item.timestamp,
+      labelComponent: labelComponent,
+    };
+  });
+};
 
 export default function WeightDetails() {
   const theme = useTheme();
   const [w, setW] = React.useState(0);
+  const [selectedRange, setSelectedRange] = React.useState<RangeType>("1D");
 
-  const rawMin = Math.min(...WEIGHT.map(p => p.value));
-  const rawMax = Math.max(...WEIGHT.map(p => p.value));
-  const baseY  = roundDown(rawMin - PADDING, STEP);
-  const topY   = roundUp(rawMax + PADDING, STEP);
-  const rangeY = +(topY - baseY).toFixed(2);
+  const spacing = selectedRange === "1D" ? 20 : 12;
 
-  const PLOT = WEIGHT.map(p => ({ value: +(p.value - baseY).toFixed(3), label: p.label }));
+  let currentRawData;
+  switch (selectedRange) {
+    case "1D":
+      currentRawData = RAW_DATA_1D;
+      break;
+    case "3D":
+      currentRawData = RAW_DATA_3D;
+      break;
+    case "7D":
+      currentRawData = RAW_DATA_7D;
+      break;
+    case "2T":
+      currentRawData = RAW_DATA_2T;
+      break;
+    case "4T":
+      currentRawData = RAW_DATA_4T;
+      break;
+    default:
+      currentRawData = RAW_DATA_1D;
+  }
 
-  const sections = Math.max(4, Math.round(rangeY / STEP)); 
-  const labels: string[] = Array.from({ length: sections + 1 }, (_, i) => {
-    const v = +(baseY + (rangeY * i) / sections).toFixed(2);
-    return `${v.toFixed(1)} kg`;
-  });
+  const chartData = React.useMemo(
+    () => prepareDataForChart(currentRawData, selectedRange, spacing),
+    [currentRawData, selectedRange, spacing]
+  );
 
-  const now = WEIGHT[WEIGHT.length - 1];
-  const ratePerDay = -0.6; 
-  const activity =
-    Math.abs(ratePerDay) >= 0.8 ? "wysoka" :
-    Math.abs(ratePerDay) >= 0.3 ? "średnia" : "niska";
+  const nowValue = currentRawData[currentRawData.length - 1].value;
+
+  // Obliczanie Zmiany w wybranym okresie (Teraz - Początek wykresu)
+  const startValue = currentRawData[0].value;
+  const totalChange = nowValue - startValue;
+  const changeStr = `${totalChange >= 0 ? "+" : ""}${totalChange.toFixed(
+    2
+  )} kg`;
+
+  // Dynamiczna etykieta w zależności od wybranego zakresu
+  const getChangeLabel = (range: RangeType) => {
+    switch (range) {
+      case "1D":
+        return "Zmiana (24h)";
+      case "3D":
+        return "Zmiana (3 dni)";
+      case "7D":
+        return "Zmiana (7 dni)";
+      case "2T":
+        return "Zmiana (2 tyg.)";
+      case "4T":
+        return "Zmiana (4 tyg.)";
+      default:
+        return "Zmiana";
+    }
+  };
+  const changeLabel = getChangeLabel(selectedRange);
 
   return (
-    <View style={styles.wrap} onLayout={e => setW(e.nativeEvent.layout.width)}>
-      <Text variant="titleLarge">Masa fermentora</Text>
-      <Text variant="bodySmall" style={{ opacity: 0.7, marginTop: 4 }}>
-        Waga - poglądowo
-      </Text>
+    <ScrollView
+      style={[styles.wrap, { marginHorizontal: -CONTAINER_PAD }]}
+      contentContainerStyle={{
+        paddingHorizontal: CONTAINER_PAD,
+        paddingBottom: 20,
+      }}
+      onLayout={(e) => {
+        const width = e.nativeEvent.layout.width;
+        if (width > 0 && Math.abs(w - width) > 1) {
+          setW(width);
+        }
+      }}
+    >
+      <View style={styles.headerRow}>
+        <View>
+          <Text variant="titleLarge">Masa fermentora</Text>
+          <Text variant="bodySmall" style={{ opacity: 0.7, marginTop: 4 }}>
+            Waga - poglądowo
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.rangeContainer}>
+        {(["1D", "3D", "7D", "2T", "4T"] as const).map((range) => {
+          const isActive = selectedRange === range;
+          return (
+            <TouchableOpacity
+              key={range}
+              onPress={() => setSelectedRange(range)}
+              style={[
+                styles.rangeButton,
+                { backgroundColor: theme.colors.surfaceVariant },
+                isActive && { backgroundColor: theme.colors.primaryContainer },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.rangeText,
+                  { color: theme.colors.onSurfaceVariant },
+                  isActive && {
+                    color: theme.colors.onPrimaryContainer,
+                    fontWeight: "bold",
+                  },
+                ]}
+              >
+                {range}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
       {w > 0 && (
-        <View style={{ marginTop: 12 }}>
+        <View
+          style={{
+            marginTop: 20,
+            position: "relative",
+            overflow: "visible",
+            width: "100%",
+          }}
+        >
           {(() => {
-            const SHIFT = Math.min(26, Math.round(w * 0.08));
-            const end = Math.max(10, RIGHT_PAD - SHIFT);
+            const chartWidth = w - 2 * CONTAINER_PAD - SAFE_RIGHT_MARGIN;
 
             return (
-              <LineChart
-                width={w}
-                height={CHART_H}
-                data={PLOT}
-                curved
-                thickness={3}
-                hideRules={false}
-                yAxisLabelWidth={Y_LABEL_W}
-                initialSpacing={LEFT_PAD}
-                endSpacing={end}
-                yAxisColor={theme.colors.outlineVariant}
-                xAxisColor={theme.colors.outlineVariant}
-                yAxisTextStyle={{ opacity: 0.7, color: theme.colors.onBackground }}
-                xAxisLabelTextStyle={{ opacity: 0.7, color: theme.colors.onBackground }}
-                color1={theme.colors.primary}
-                maxValue={rangeY}               
-                yAxisLabelTexts={labels}       
-                noOfSections={labels.length - 1}
-                scrollToEnd
-                scrollAnimation={false}
-                hideDataPoints
-              />
+              <View style={{ zIndex: 10, elevation: 10, overflow: "visible" }}>
+                <LineChart
+                  key={`${w}-${selectedRange}`}
+                  width={chartWidth}
+                  height={CHART_H}
+                  data={chartData}
+                  spacing={spacing}
+                  curved
+                  thickness={3}
+                  hideRules={false}
+                  yAxisLabelWidth={Y_LABEL_W}
+                  initialSpacing={LEFT_PAD}
+                  endSpacing={5}
+                  yAxisColor={theme.colors.outlineVariant}
+                  xAxisColor={theme.colors.outlineVariant}
+                  yAxisTextStyle={{
+                    opacity: 0.7,
+                    color: theme.colors.onSurface,
+                  }}
+                  xAxisLabelTextStyle={{
+                    opacity: 0.7,
+                    color: theme.colors.onSurface,
+                  }}
+                  color={theme.colors.primary}
+                  // --- KONFIGURACJA ZAKRESU 50-70 ---
+                  yAxisOffset={WEIGHT_MIN_Y} // Start od 50
+                  maxValue={WEIGHT_RANGE} // Zakres 20 (do 70)
+                  yAxisLabelTexts={Y_LABELS} // Sztywne etykiety
+                  noOfSections={10} // Co 2 stopnie (20 / 2 = 10)
+                  // ----------------------------------
+
+                  scrollToEnd
+                  scrollAnimation={false}
+                  hideDataPoints={true}
+                  pointerConfig={{
+                    pointerStripHeight: CHART_H,
+                    pointerStripColor: theme.colors.outlineVariant,
+                    pointerStripWidth: 2,
+                    pointerColor: theme.colors.primary,
+                    radius: 4,
+                    pointerLabelWidth: 100,
+                    pointerLabelHeight: 60,
+                    activatePointersOnLongPress: true,
+                    autoAdjustPointerLabelPosition: false,
+                    shiftPointerLabelY: 45,
+
+                    pointerLabelComponent: (items: any) => {
+                      const item = items[0];
+                      const { full } = formatDateTime(item.timestamp);
+
+                      return (
+                        <View
+                          style={{
+                            height: 60,
+                            width: 100,
+                            justifyContent: "flex-end",
+                            alignItems: "center",
+                          }}
+                        >
+                          <View
+                            style={{
+                              backgroundColor: theme.colors.inverseSurface,
+                              borderRadius: 8,
+                              paddingHorizontal: 8,
+                              paddingVertical: 4,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                color: theme.colors.inverseOnSurface,
+                                fontWeight: "bold",
+                                fontSize: 14,
+                                textAlign: "center",
+                              }}
+                            >
+                              {item.value} kg
+                            </Text>
+                            <Text
+                              style={{
+                                color: theme.colors.inverseOnSurface,
+                                fontSize: 10,
+                                textAlign: "center",
+                              }}
+                            >
+                              {full}
+                            </Text>
+                          </View>
+                        </View>
+                      );
+                    },
+                  }}
+                />
+              </View>
             );
           })()}
         </View>
       )}
+
+      <View style={{ alignItems: "center", marginTop: 8 }}>
+        <Text variant="labelSmall" style={{ opacity: 0.5 }}>
+          Przytrzymaj wykres, aby sprawdzić punkt
+        </Text>
+      </View>
 
       <View style={styles.legend}>
         <View style={[styles.dot, { backgroundColor: theme.colors.primary }]} />
@@ -112,35 +361,65 @@ export default function WeightDetails() {
 
       <View style={styles.row}>
         <View style={styles.col}>
-          <Text variant="labelSmall" style={{ opacity: 0.7 }}>Obecnie</Text>
-          <Text variant="titleMedium">{now.value.toFixed(2)} kg</Text>
-          <Text variant="bodySmall" style={{ opacity: 0.6 }}>{now.label}</Text>
-        </View>
-        <View style={styles.col}>
-          <Text variant="labelSmall" style={{ opacity: 0.7 }}>Tempo</Text>
-          <Text variant="titleMedium">
-            {ratePerDay >= 0 ? "+" : ""}{ratePerDay.toFixed(2)} kg/dobę
+          <Text variant="labelSmall" style={{ opacity: 0.7 }}>
+            Masa (teraz)
           </Text>
-          <Text variant="bodySmall" style={{ opacity: 0.6 }}>szacunek</Text>
-        </View>
-        <View style={styles.col}>
-          <Text variant="labelSmall" style={{ opacity: 0.7 }}>Aktywność</Text>
-          <Text variant="titleMedium">
-            {activity.charAt(0).toUpperCase() + activity.slice(1)}
-          </Text>
+          <Text variant="titleMedium">{nowValue.toFixed(2)} kg</Text>
           <Text variant="bodySmall" style={{ opacity: 0.6 }}>
-            wg tempa zmian
+            Ostatni odczyt
+          </Text>
+        </View>
+        <View style={styles.col}>
+          <Text variant="labelSmall" style={{ opacity: 0.7 }}>
+            {changeLabel}
+          </Text>
+          <Text variant="titleMedium">{changeStr}</Text>
+          <Text variant="bodySmall" style={{ opacity: 0.6 }}>
+            Δ masy
           </Text>
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  wrap: { paddingRight: 0 },
-  legend: { flexDirection: "row", alignItems: "center", marginTop: 8 },
+  wrap: {},
+  headerRow: {
+    marginBottom: 8,
+  },
+  rangeContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    marginBottom: 8,
+    gap: 8,
+  },
+  rangeButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  rangeText: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  legend: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 12,
+    marginTop: 8,
+  },
   dot: { width: 10, height: 10, borderRadius: 6, marginRight: 6 },
-  row: { flexDirection: "row", gap: 12, marginTop: 12 },
-  col: { flex: 1 },
+  row: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 12,
+    marginTop: 12,
+  },
+  col: {
+    flexGrow: 1,
+    minWidth: 100,
+  },
 });
