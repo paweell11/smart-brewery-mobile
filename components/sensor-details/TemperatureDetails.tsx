@@ -366,7 +366,7 @@ export default function TemperatureDetails() {
                   } // Tylko w trybie dual
                   spacing={spacing}
                   initialSpacing={LEFT_PAD}
-                  endSpacing={0} // Do końca
+                  endSpacing={5} // Do końca
                   // Style linii
                   curved
                   thickness={3}
