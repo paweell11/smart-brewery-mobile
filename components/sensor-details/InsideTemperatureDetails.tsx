@@ -210,7 +210,7 @@ export default function InsideTemperatureDetails() {
         <View>
           <Text variant="titleLarge">Temperatura wewnętrzna</Text>
           <Text variant="bodySmall" style={{ opacity: 0.7, marginTop: 4 }}>
-            Pas docelowy {TARGET_MIN}–{TARGET_MAX}°C (poglądowo)
+            Pas docelowy {TARGET_MIN}–{TARGET_MAX}°C
           </Text>
         </View>
       </View>

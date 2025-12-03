@@ -202,7 +202,7 @@ export default function TemperatureDetails() {
           <Text variant="titleLarge">Temperatura fermentacji</Text>
           <Text variant="bodySmall" style={{ opacity: 0.7, marginTop: 4 }}>
             {mode === "dual"
-              ? "Wewnątrz vs otoczenie"
+              ? "Temperatura wewnątrz vs zewnątrz"
               : "Różnica temperatur (ΔT)"}
           </Text>
         </View>

@@ -202,7 +202,7 @@ export default function WeightDetails() {
         <View>
           <Text variant="titleLarge">Masa fermentora</Text>
           <Text variant="bodySmall" style={{ opacity: 0.7, marginTop: 4 }}>
-            Waga - poglądowo
+            Waga brzeczki
           </Text>
         </View>
       </View>

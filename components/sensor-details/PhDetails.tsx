@@ -166,7 +166,7 @@ export default function PhDetails() {
         <View>
           <Text variant="titleLarge">pH fermentacji</Text>
           <Text variant="bodySmall" style={{ opacity: 0.7, marginTop: 4 }}>
-            Dane poglądowe
+            Wskaźnik pH
           </Text>
         </View>
       </View>

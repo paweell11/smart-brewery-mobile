@@ -206,9 +206,7 @@ export default function EnvironmentDetails() {
         <View>
           <Text variant="titleLarge">Warunki otoczenia</Text>
           <Text variant="bodySmall" style={{ opacity: 0.7, marginTop: 4 }}>
-            {mode === "humidity"
-              ? "Wilgotność względna"
-              : "Ciśnienie atmosferyczne"}
+            Wilgotność oraz ciśnienie otoczenia
           </Text>
         </View>
       </View>
@@ -279,6 +277,7 @@ export default function EnvironmentDetails() {
                   hideRules={false}
                   yAxisLabelWidth={Y_LABEL_W}
                   initialSpacing={LEFT_PAD}
+                  // endSpacing zmieniony na 5 zgodnie z życzeniem
                   endSpacing={5}
                   yAxisColor={theme.colors.outlineVariant}
                   xAxisColor={theme.colors.outlineVariant}
