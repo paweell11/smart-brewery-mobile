@@ -26,10 +26,11 @@ export default function UserForm() {
 
   const mutation = useMutation({
     mutationFn: (value: any) => {
-      return apiClient.makeRequest("/edit_user", {
+      return apiClient.makeRequest("/me", {
         method: "PUT",
         headers: {
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${accessToken}`
         },
         body: value
       });
@@ -47,7 +48,7 @@ export default function UserForm() {
   const form = useAppForm({
     ...userFormOpts,
     onSubmit: async ({ value }) => {
-
+      
     }
   });
 

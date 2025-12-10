@@ -8,7 +8,7 @@ export function useUserInfo() {
   const { accessToken } = useAuthContext();
   const { data, ...other } = useQuery({ 
     queryKey: ["userData"], 
-    queryFn: () => apiClient.makeRequest<UserInfo>("/user_info", {
+    queryFn: () => apiClient.makeRequest<UserInfo>("/me", {
       method: "GET",
       headers: {
         "Authorization": `Bearer ${accessToken}`

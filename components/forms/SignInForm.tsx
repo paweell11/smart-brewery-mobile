@@ -1,12 +1,12 @@
+import { apiClient } from "@/api/apiClientInstance";
+import { Login } from "@/api/types";
 import { useAppForm } from "@/hooks/form";
 import { useAuthContext } from "@/hooks/useAuthContext";
 import { formOptions } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { View } from "react-native";
-import FromSubmitButton from "../FormSubmitButton";
-import { apiClient } from "@/api/apiClientInstance";
-import { Login } from "@/api/types";
 import ErrorDialog from "../ErrorDialog";
+import FromSubmitButton from "../FormSubmitButton";
 import LoadingDialog from "../LoadingDialog";
 
 
@@ -60,9 +60,9 @@ export default function SignInForm() {
                   return "Pole nie może być puste."
                 }
 
-                if (!value.includes("@")) {
-                  return "Niepoprawny adres e-mail.";
-                }
+                // if (!value.includes("@")) {
+                //   return "Niepoprawny adres e-mail.";
+                // }
               } 
             }}
           >

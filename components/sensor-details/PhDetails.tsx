@@ -1,7 +1,9 @@
+import { useSensorData } from "@/hooks/useSensorData";
 import * as React from "react";
 import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
 import { Text, useTheme } from "react-native-paper";
+import { PhDataType } from "./types";
 
 // --- KONFIGURACJA WYKRESU ---
 const Y_LABEL_W = 40;
@@ -110,6 +112,14 @@ const prepareDataForChart = (
 };
 
 export default function PhDetails() {
+  const { data, isSuccess, isPending, isError } = useSensorData<PhDataType[]>({ 
+    sensorPath: "/readings/ph", 
+    searchParams: [
+      { days: "1" }, { days: "3" }, { days: "7" },
+      { days: "14" }, { days: "28" }
+    ]
+  });
+
   const theme = useTheme();
   const [w, setW] = React.useState(0);
   const [selectedRange, setSelectedRange] = React.useState<RangeType>("1D");
@@ -119,22 +129,22 @@ export default function PhDetails() {
   let currentRawData;
   switch (selectedRange) {
     case "1D":
-      currentRawData = RAW_DATA_1D;
+      currentRawData = data[0];
       break;
     case "3D":
-      currentRawData = RAW_DATA_3D;
+      currentRawData = data[1];
       break;
     case "7D":
-      currentRawData = RAW_DATA_7D;
+      currentRawData = data[2];
       break;
     case "2T":
-      currentRawData = RAW_DATA_2T;
+      currentRawData = data[3];
       break;
     case "4T":
-      currentRawData = RAW_DATA_4T;
+      currentRawData = data[4];
       break;
     default:
-      currentRawData = RAW_DATA_1D;
+      currentRawData = data[0];
   }
 
   const chartData = React.useMemo(
