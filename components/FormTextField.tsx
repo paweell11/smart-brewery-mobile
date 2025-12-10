@@ -8,9 +8,10 @@ type FormTextFieldProps = {
   style?: StyleProp<TextStyle>;
   togglePasswordBtn?: boolean;
   keyboardType?: KeyboardTypeOptions;
+  disabled?: boolean;
 }
 
-export function FormTextField({ label, style, togglePasswordBtn, keyboardType }: FormTextFieldProps) {
+export function FormTextField({ label, style, togglePasswordBtn, keyboardType, disabled }: FormTextFieldProps) {
   const field = useFieldContext();
   const [secure, setSecure] = useState(() => !togglePasswordBtn ? false : true);
   const value = field.state.value as string ?? undefined;
@@ -21,6 +22,7 @@ export function FormTextField({ label, style, togglePasswordBtn, keyboardType }:
         mode="outlined"
         keyboardType={keyboardType}
         label={label}
+        disabled={!!disabled}
         style={style}
         onChangeText={(text) => {
           field.handleChange(text)

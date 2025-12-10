@@ -22,9 +22,9 @@ export default function MyProfileScreen() {
 
   return (
     <SafeAreaView
-      edges={["bottom", "left", "right"]}
+      edges={["bottom", "left", "right", "top"]}
       style={{
-        paddingTop: 20,
+        // paddingTop: 40,
         paddingLeft: 20,
         paddingRight: 20,
         backgroundColor: theme.colors.background,
@@ -83,8 +83,8 @@ export default function MyProfileScreen() {
             }
           </View>
 
-          <Text variant="titleMedium" style={{paddingTop: 30, paddingBottom: 10, textAlign: "center"}}>
-            Edytuj swoje dane osobowe, e-mail oraz hasło.
+          <Text variant="titleMedium" style={{paddingTop: 30, paddingBottom: 20, textAlign: "center"}}>
+            Edytuj swoje dane osobowe.
           </Text>
 
           <KeyboardAvoidingView behavior="height" keyboardVerticalOffset={frHeaderHeight + 5}>

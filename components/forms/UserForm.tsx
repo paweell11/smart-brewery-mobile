@@ -6,8 +6,10 @@ import { formOptions } from "@tanstack/react-form";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { View } from "react-native";
-import { IconButton } from "react-native-paper";
+import { IconButton, useTheme } from "react-native-paper";
+import ErrorDialog from "../ErrorDialog";
 import FromSubmitButton from "../FormSubmitButton";
+import LoadingDialog from "../LoadingDialog";
 
 
 const userFormOpts = formOptions({
@@ -15,12 +17,12 @@ const userFormOpts = formOptions({
     firstName: "",
     lastName: "",
     email: "",
-    password: ""
   }
 });
 
 
 export default function UserForm() {
+  const theme = useTheme();
   const { accessToken } = useAuthContext();
   const { data } = useUserInfo();
 
@@ -48,7 +50,15 @@ export default function UserForm() {
   const form = useAppForm({
     ...userFormOpts,
     onSubmit: async ({ value }) => {
+      const { firstName, lastName } = value;
+      const updateValue = { full_name: firstName + " " + lastName };
       
+      try {
+        await mutation.mutateAsync(updateValue);
+      } catch (error) {
+        if (error instanceof Error)
+          console.error("Update error", error.message);
+      }
     }
   });
 
@@ -126,31 +136,15 @@ export default function UserForm() {
               (field) => (
                 <View style={{ display: "flex", flexDirection: "row", alignItems: "center"}}>
                   <View style={{ flex: 1 }}>
-                    <field.FormTextField label="E-mail" keyboardType="email-address" />
+                    <field.FormTextField label="E-mail" keyboardType="email-address" disabled={true} />
                   </View>
                   <IconButton
                     icon="backup-restore"
+                    iconColor={theme.colors.background}
                     size={26}
-                    onPress={() => field.setValue(data.email)}
+                    onPress={() => {}}
                   />
                 </View>
-              )
-            }
-          </form.AppField>
-
-          <form.AppField
-            name="password"
-            validators={{
-              onChange: ({value}) => {
-                if (value.length > 0 && value.length < 5) {
-                  return "Hasło zbyt krótkie.";
-                }
-              }
-            }}
-          >
-            {
-              (field) => (
-                <field.FormTextField label="Hasło" togglePasswordBtn={true} />
               )
             }
           </form.AppField>
@@ -159,6 +153,20 @@ export default function UserForm() {
 
         </View>
       </form.AppForm>
+
+      {
+        (mutation.isPending) && 
+        <LoadingDialog title="Wysyłanie..." icon="progress-upload" />
+      }
+
+      {
+        (mutation.isError) &&
+        <ErrorDialog 
+          messages={[mutation.error.message]}
+          btnText={"Zamknij"}
+          onClose={() => mutation.reset()}
+        />
+      }
     </>
   );
 }
