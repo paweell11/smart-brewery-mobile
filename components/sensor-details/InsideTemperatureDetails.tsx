@@ -1,7 +1,15 @@
+import { useSensorData } from "@/hooks/useSensorData";
 import * as React from "react";
-import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { LineChart } from "react-native-gifted-charts";
 import { Text, useTheme } from "react-native-paper";
+import { TempDataType } from "./types";
 
 // --- KONFIGURACJA WYKRESU ---
 const Y_LABEL_W = 40;
@@ -21,43 +29,10 @@ const SAFE_RIGHT_MARGIN = 0;
 
 // Stała do korekty szerokości ScrollView (rozszerzenie paska przewijania do krawędzi)
 const CONTAINER_PAD = 100;
+const TARGET_POINTS_COUNT = 40;
 
 // Definicja typów zakresów
 type RangeType = "1D" | "3D" | "7D" | "2T" | "4T";
-
-// --- POMOCNICZE FUNKCJE DO GENEROWANIA DANYCH (SYMULACJA BACKENDU) ---
-const generateMockData = (hours: number, intervalMinutes: number) => {
-  const points = [];
-  const count = Math.floor((hours * 60) / intervalMinutes);
-  const now = new Date();
-
-  // Generujemy dane wstecz od "teraz"
-  for (let i = 0; i < count; i++) {
-    const time = new Date(
-      now.getTime() - (count - 1 - i) * intervalMinutes * 60000
-    );
-    const baseTemp = 21;
-    // Symulacja wolnych zmian temperatury (fermentacja) + dobowe wahania
-    const fluctuation =
-      Math.sin(i / 20) * 1.0 + // Dłuższy trend
-      Math.sin(i / 5) * 0.3 + // Krótkie wahania
-      (Math.random() * 0.2 - 0.1);
-
-    points.push({
-      timestamp: time,
-      value: parseFloat((baseTemp + fluctuation).toFixed(1)),
-    });
-  }
-  return points;
-};
-
-// Generujemy dane dla różnych zakresów
-// Im dłuższy zakres, tym rzadszy interwał próbkowania, aby nie generować tysięcy punktów
-const RAW_DATA_1D = generateMockData(24, 30); // Co 30 min
-const RAW_DATA_3D = generateMockData(72, 60); // Co 1h
-const RAW_DATA_7D = generateMockData(168, 120); // 7 dni, co 2h
-const RAW_DATA_2T = generateMockData(336, 240); // 14 dni (2 tyg), co 4h
-const RAW_DATA_4T = generateMockData(672, 360); // 28 dni (4 tyg), co 6h
 
 // --- FORMATOWANIE DATY ---
 const formatDateTime = (date: Date) => {
@@ -72,7 +47,7 @@ const formatDateTime = (date: Date) => {
   };
 };
 
-// --- LOGIKA PRZYGOTOWANIA DANYCH DLA WYKRESU (FRONTEND) ---
+// --- LOGIKA PRZYGOTOWANIA DANYCH DLA WYKRESU ---
 const prepareDataForChart = (
   rawData: { timestamp: Date; value: number }[],
   range: RangeType,
@@ -81,34 +56,20 @@ const prepareDataForChart = (
   const labelWidth = 60;
   const labelShift = spacing / 2 - labelWidth / 2;
 
+  // Ustalamy sztywny krok etykiet w zależności od zagęszczenia punktów (spacing).
+  // Dla 1D (spacing 20) -> co 4 punkty
+  // Dla reszty (spacing 12) -> co 6 punktów
+  const step = range === "1D" ? 4 : 6;
+
   return rawData.map((item, index) => {
+    // Liczymy indeks od końca, aby etykiety były "zakotwiczone" z prawej strony (od "Teraz").
+    const indexFromEnd = rawData.length - 1 - index;
+
     let showLabel = false;
 
-    // Logika zagęszczenia etykiet na osi X w zależności od zakresu.
-    // CEL: Utrzymać podobną odległość wizualną (piksele) między etykietami.
-    // 1D: spacing 20 * 4 = 80px
-    // Reszta: spacing 12 * 6 = 72px (bardzo zbliżone)
-    switch (range) {
-      case "1D":
-        // Co 4. punkt
-        if (index % 4 === 0) showLabel = true;
-        break;
-      case "3D":
-        // Co 6. punkt
-        if (index % 6 === 0) showLabel = true;
-        break;
-      case "7D":
-        // Zmieniono z 12 na 6, aby zagęścić etykiety
-        if (index % 6 === 0) showLabel = true;
-        break;
-      case "2T":
-        // Zmieniono z 12 na 6, aby zagęścić etykiety
-        if (index % 6 === 0) showLabel = true;
-        break;
-      case "4T":
-        // Zmieniono z 16 na 6, aby zagęścić etykiety
-        if (index % 6 === 0) showLabel = true;
-        break;
+    // Jeśli indeks od końca dzieli się przez krok bez reszty, pokazujemy etykietę.
+    if (indexFromEnd % step === 0) {
+      showLabel = true;
     }
 
     let labelComponent = undefined;
@@ -141,41 +102,119 @@ const prepareDataForChart = (
 
 export default function InsideTemperatureDetails() {
   const theme = useTheme();
+
+  // 1. POBIERANIE DANYCH
+  const { data, isPending } = useSensorData<TempDataType[]>({
+    sensorPath: "/readings/temperature",
+    searchParams: [
+      { days: "1" },
+      { days: "3" },
+      { days: "7" },
+      { days: "14" },
+      { days: "28" },
+    ],
+  });
+
+  // --- LOGOWANIE DANYCH DO KONSOLI ---
+  React.useEffect(() => {
+    if (data) {
+      console.log("=== POBRANE TEMP WEWNĄTRZ ===");
+      data.forEach((d, i) => {
+        console.log(`Zestaw ${i}: ${d ? d.length : 0} punktów`);
+      });
+    }
+  }, [data]);
+
   const [w, setW] = React.useState(0);
   const [selectedRange, setSelectedRange] = React.useState<RangeType>("1D");
 
   const vividGreen = "#16a34a";
-  // Dla 1D dajemy szerzej (20), dla reszty ciaśniej (12), żeby zmieścić więcej historii
   const spacing = selectedRange === "1D" ? 20 : 12;
 
-  // Wybór odpowiedniego zestawu danych
-  let currentRawData;
-  switch (selectedRange) {
-    case "1D":
-      currentRawData = RAW_DATA_1D;
-      break;
-    case "3D":
-      currentRawData = RAW_DATA_3D;
-      break;
-    case "7D":
-      currentRawData = RAW_DATA_7D;
-      break;
-    case "2T":
-      currentRawData = RAW_DATA_2T;
-      break;
-    case "4T":
-      currentRawData = RAW_DATA_4T;
-      break;
-    default:
-      currentRawData = RAW_DATA_1D;
+  // 2. PRZETWARZANIE DANYCH
+  // Wybór surowych danych
+  let rawBackendData: TempDataType[] | null = null;
+  if (data && data.length >= 5) {
+    switch (selectedRange) {
+      case "1D":
+        rawBackendData = data[0];
+        break;
+      case "3D":
+        rawBackendData = data[1];
+        break;
+      case "7D":
+        rawBackendData = data[2];
+        break;
+      case "2T":
+        rawBackendData = data[3];
+        break;
+      case "4T":
+        rawBackendData = data[4];
+        break;
+      default:
+        rawBackendData = data[0];
+    }
   }
 
+  const { processedChartData, stats } = React.useMemo(() => {
+    if (!rawBackendData || rawBackendData.length === 0) {
+      return { processedChartData: [], stats: { now: 0 } };
+    }
+
+    // Sortowanie chronologiczne
+    const fullSortedHistory = [...rawBackendData].sort(
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    const lastItem = fullSortedHistory[fullSortedHistory.length - 1];
+    const nowValue = lastItem.temperature_celsius;
+    const nowTimestamp = new Date(lastItem.timestamp).getTime();
+
+    // Downsampling
+    const totalPoints = fullSortedHistory.length;
+    let sampledData = [];
+
+    if (totalPoints <= TARGET_POINTS_COUNT) {
+      sampledData = fullSortedHistory.map((item) => ({
+        value: item.temperature_celsius,
+        timestamp: new Date(item.timestamp),
+      }));
+    } else {
+      const step = Math.ceil(totalPoints / TARGET_POINTS_COUNT);
+      for (let i = 0; i < totalPoints; i += step) {
+        const item = fullSortedHistory[i];
+        sampledData.push({
+          value: item.temperature_celsius,
+          timestamp: new Date(item.timestamp),
+        });
+      }
+
+      // Zawsze dodaj ostatni punkt
+      const lastSampled = sampledData[sampledData.length - 1];
+      if (lastSampled.timestamp.getTime() !== nowTimestamp) {
+        sampledData.push({
+          value: nowValue,
+          timestamp: new Date(nowTimestamp),
+        });
+      }
+    }
+
+    return {
+      processedChartData: sampledData,
+      stats: { now: nowValue },
+    };
+  }, [rawBackendData]);
+
   const chartData = React.useMemo(
-    () => prepareDataForChart(currentRawData, selectedRange, spacing),
-    [currentRawData, selectedRange, spacing]
+    () => prepareDataForChart(processedChartData, selectedRange, spacing),
+    [processedChartData, selectedRange, spacing]
   );
 
-  const nowValue = currentRawData[currentRawData.length - 1].value;
+  const hasData = processedChartData.length > 0;
+
+  // Obliczanie statusów (istniejąca logika)
+  const nowValue = stats.now;
   const status =
     nowValue < TARGET_MIN
       ? "Poniżej"
@@ -191,6 +230,26 @@ export default function InsideTemperatureDetails() {
   const deltaStr = `${deltaVal >= 0 ? "+" : ""}${deltaVal.toFixed(
     1
   )} °C do ${closer}`;
+
+  if (isPending) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: 300,
+          marginHorizontal: -CONTAINER_PAD,
+          paddingLeft: CONTAINER_PAD,
+        }}
+      >
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={{ marginTop: 10, opacity: 0.6 }}>
+          Pobieranie danych...
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -210,7 +269,7 @@ export default function InsideTemperatureDetails() {
         <View>
           <Text variant="titleLarge">Temperatura wewnętrzna</Text>
           <Text variant="bodySmall" style={{ opacity: 0.7, marginTop: 4 }}>
-            Pas docelowy {TARGET_MIN}–{TARGET_MAX}°C
+            Pas docelowy {TARGET_MIN}–{TARGET_MAX}°C (poglądowo)
           </Text>
         </View>
       </View>
@@ -245,174 +304,192 @@ export default function InsideTemperatureDetails() {
         })}
       </View>
 
-      {w > 0 && (
+      {!hasData ? (
         <View
           style={{
-            marginTop: 20,
-            position: "relative",
-            overflow: "visible",
-            width: "100%",
+            height: CHART_H,
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
-          {(() => {
-            const chartWidth = w - 2 * CONTAINER_PAD - SAFE_RIGHT_MARGIN;
-            const chartDrawAreaWidth = chartWidth - Y_LABEL_W + BG_RIGHT_EXTEND;
+          <Text>Brak danych dla wybranego okresu.</Text>
+        </View>
+      ) : (
+        w > 0 && (
+          <View
+            style={{
+              marginTop: 20,
+              position: "relative",
+              overflow: "visible",
+              width: "100%",
+            }}
+          >
+            {(() => {
+              const chartWidth = w - 2 * CONTAINER_PAD - SAFE_RIGHT_MARGIN;
+              // Tło musi być szersze, aby pokryć cały obszar wykresu włącznie z dodatkowym paddingiem
+              const chartDrawAreaWidth =
+                chartWidth - Y_LABEL_W + BG_RIGHT_EXTEND;
 
-            const pxPerDegree = CHART_H / FIXED_MAX;
-            const topOffsetBase = (FIXED_MAX - TARGET_MAX) * pxPerDegree;
-            const topOffset = topOffsetBase + BG_TOP_SHIFT;
-            const bandHeightBase = (TARGET_MAX - TARGET_MIN) * pxPerDegree;
-            const bandHeight = bandHeightBase + BG_HEIGHT_CORRECTION;
+              const pxPerDegree = CHART_H / FIXED_MAX;
+              const topOffsetBase = (FIXED_MAX - TARGET_MAX) * pxPerDegree;
+              const topOffset = topOffsetBase + BG_TOP_SHIFT;
+              const bandHeightBase = (TARGET_MAX - TARGET_MIN) * pxPerDegree;
+              const bandHeight = bandHeightBase + BG_HEIGHT_CORRECTION;
 
-            const dashedLineStyle = {
-              position: "absolute" as const,
-              left: Y_LABEL_W,
-              width: chartDrawAreaWidth,
-              borderTopWidth: 1,
-              borderColor: vividGreen,
-              borderStyle: "dashed" as const,
-              zIndex: 0,
-              elevation: 0,
-            };
+              const dashedLineStyle = {
+                position: "absolute" as const,
+                left: Y_LABEL_W,
+                width: chartDrawAreaWidth,
+                borderTopWidth: 1,
+                borderColor: vividGreen,
+                borderStyle: "dashed" as const,
+                zIndex: 0,
+                elevation: 0,
+              };
 
-            const labelTextStyle = {
-              position: "absolute" as const,
-              left: Y_LABEL_W,
-              color: vividGreen,
-              fontWeight: "bold" as const,
-              fontSize: 13,
-              zIndex: 0,
-              elevation: 0,
-            };
+              const labelTextStyle = {
+                position: "absolute" as const,
+                left: Y_LABEL_W,
+                color: vividGreen,
+                fontWeight: "bold" as const,
+                fontSize: 13,
+                zIndex: 0,
+                elevation: 0,
+              };
 
-            return (
-              <>
-                <View
-                  style={{
-                    position: "absolute",
-                    left: Y_LABEL_W,
-                    top: topOffset,
-                    width: chartDrawAreaWidth,
-                    height: bandHeight,
-                    backgroundColor: "rgba(22, 163, 74, 0.12)",
-                    zIndex: 0,
-                    elevation: 0,
-                  }}
-                />
-
-                <View style={[dashedLineStyle, { top: topOffset }]} />
-                <Text style={[labelTextStyle, { top: topOffset - 20 }]}>
-                  Max {TARGET_MAX}°C
-                </Text>
-
-                <View
-                  style={[dashedLineStyle, { top: topOffset + bandHeight }]}
-                />
-                <Text
-                  style={[labelTextStyle, { top: topOffset + bandHeight - 20 }]}
-                >
-                  Min {TARGET_MIN}°C
-                </Text>
-
-                <View style={{ zIndex: 10, elevation: 10 }}>
-                  <LineChart
-                    key={`${w}-${selectedRange}`}
-                    width={chartWidth}
-                    height={CHART_H}
-                    data={chartData}
-                    spacing={spacing}
-                    showReferenceLine1={false}
-                    showReferenceLine2={false}
-                    curved
-                    thickness={3}
-                    hideRules={false}
-                    yAxisLabelWidth={Y_LABEL_W}
-                    initialSpacing={LEFT_PAD}
-                    endSpacing={6}
-                    yAxisColor={theme.colors.outlineVariant}
-                    xAxisColor={theme.colors.outlineVariant}
-                    yAxisTextStyle={{
-                      opacity: 0.7,
-                      color: theme.colors.onSurface,
-                    }}
-                    xAxisLabelTextStyle={{
-                      opacity: 0.7,
-                      color: theme.colors.onSurface,
-                    }}
-                    color={theme.colors.primary}
-                    maxValue={FIXED_MAX}
-                    yAxisLabelTexts={Y_LABELS}
-                    noOfSections={Y_LABELS.length - 1}
-                    scrollToEnd
-                    scrollAnimation={false}
-                    hideDataPoints={true}
-                    pointerConfig={{
-                      pointerStripHeight: CHART_H,
-                      pointerStripColor: theme.colors.outlineVariant,
-                      pointerStripWidth: 2,
-                      pointerColor: theme.colors.primary,
-                      radius: 4,
-                      pointerLabelWidth: 100,
-                      pointerLabelHeight: 60,
-                      activatePointersOnLongPress: true,
-                      autoAdjustPointerLabelPosition: false,
-                      shiftPointerLabelY: 45,
-
-                      pointerLabelComponent: (items: any) => {
-                        const item = items[0];
-                        const { full } = formatDateTime(item.timestamp);
-                        return (
-                          <View
-                            style={{
-                              height: 60,
-                              width: 100,
-                              justifyContent: "flex-end",
-                              alignItems: "center",
-                            }}
-                          >
-                            <View
-                              style={{
-                                backgroundColor: theme.colors.inverseSurface,
-                                borderRadius: 8,
-                                paddingHorizontal: 8,
-                                paddingVertical: 4,
-                              }}
-                            >
-                              <Text
-                                style={{
-                                  color: theme.colors.inverseOnSurface,
-                                  fontWeight: "bold",
-                                  fontSize: 14,
-                                  textAlign: "center",
-                                }}
-                              >
-                                {item.value}°C
-                              </Text>
-                              <Text
-                                style={{
-                                  color: theme.colors.inverseOnSurface,
-                                  fontSize: 10,
-                                  textAlign: "center",
-                                }}
-                              >
-                                {full}
-                              </Text>
-                            </View>
-                          </View>
-                        );
-                      },
+              return (
+                <>
+                  <View
+                    style={{
+                      position: "absolute",
+                      left: Y_LABEL_W,
+                      top: topOffset,
+                      width: chartDrawAreaWidth,
+                      height: bandHeight,
+                      backgroundColor: "rgba(22, 163, 74, 0.12)",
+                      zIndex: 0,
+                      elevation: 0,
                     }}
                   />
-                </View>
-              </>
-            );
-          })()}
-        </View>
+
+                  <View style={[dashedLineStyle, { top: topOffset }]} />
+                  <Text style={[labelTextStyle, { top: topOffset - 20 }]}>
+                    Max {TARGET_MAX}°C
+                  </Text>
+
+                  <View
+                    style={[dashedLineStyle, { top: topOffset + bandHeight }]}
+                  />
+                  <Text
+                    style={[
+                      labelTextStyle,
+                      { top: topOffset + bandHeight - 20 },
+                    ]}
+                  >
+                    Min {TARGET_MIN}°C
+                  </Text>
+
+                  <View style={{ zIndex: 10, elevation: 10 }}>
+                    <LineChart
+                      key={`${w}-${selectedRange}`}
+                      width={chartWidth}
+                      height={CHART_H}
+                      data={chartData}
+                      spacing={spacing}
+                      showReferenceLine1={false}
+                      showReferenceLine2={false}
+                      curved
+                      thickness={3}
+                      hideRules={false}
+                      yAxisLabelWidth={Y_LABEL_W}
+                      initialSpacing={LEFT_PAD}
+                      // endSpacing = 6 zgodnie z wymaganiem
+                      endSpacing={6}
+                      yAxisColor={theme.colors.outlineVariant}
+                      xAxisColor={theme.colors.outlineVariant}
+                      yAxisTextStyle={{
+                        opacity: 0.7,
+                        color: theme.colors.onSurface,
+                      }}
+                      xAxisLabelTextStyle={{
+                        opacity: 0.7,
+                        color: theme.colors.onSurface,
+                      }}
+                      color={theme.colors.primary}
+                      maxValue={FIXED_MAX}
+                      yAxisLabelTexts={Y_LABELS}
+                      noOfSections={Y_LABELS.length - 1}
+                      scrollToEnd
+                      scrollAnimation={false}
+                      hideDataPoints={true}
+                      pointerConfig={{
+                        pointerStripHeight: CHART_H,
+                        pointerStripColor: theme.colors.outlineVariant,
+                        pointerStripWidth: 2,
+                        pointerColor: theme.colors.primary,
+                        radius: 4,
+                        pointerLabelWidth: 100,
+                        pointerLabelHeight: 60,
+                        activatePointersOnLongPress: true,
+                        autoAdjustPointerLabelPosition: false,
+                        shiftPointerLabelY: 45,
+
+                        pointerLabelComponent: (items: any) => {
+                          const item = items[0];
+                          const { full } = formatDateTime(item.timestamp);
+                          return (
+                            <View
+                              style={{
+                                height: 60,
+                                width: 100,
+                                justifyContent: "flex-end",
+                                alignItems: "center",
+                              }}
+                            >
+                              <View
+                                style={{
+                                  backgroundColor: theme.colors.inverseSurface,
+                                  borderRadius: 8,
+                                  paddingHorizontal: 8,
+                                  paddingVertical: 4,
+                                }}
+                              >
+                                <Text
+                                  style={{
+                                    color: theme.colors.inverseOnSurface,
+                                    fontWeight: "bold",
+                                    fontSize: 14,
+                                    textAlign: "center",
+                                  }}
+                                >
+                                  {item.value}°C
+                                </Text>
+                                <Text
+                                  style={{
+                                    color: theme.colors.inverseOnSurface,
+                                    fontSize: 10,
+                                    textAlign: "center",
+                                  }}
+                                >
+                                  {full}
+                                </Text>
+                              </View>
+                            </View>
+                          );
+                        },
+                      }}
+                    />
+                  </View>
+                </>
+              );
+            })()}
+          </View>
+        )
       )}
 
       <View style={{ alignItems: "center", marginTop: 8 }}>
         <Text variant="labelSmall" style={{ opacity: 0.5 }}>
-          Przytrzymaj wykres, aby sprawdzić punkt
+          {hasData ? "Przytrzymaj wykres, aby sprawdzić punkt" : ""}
         </Text>
       </View>
 
@@ -433,7 +510,9 @@ export default function InsideTemperatureDetails() {
           <Text variant="labelSmall" style={{ opacity: 0.7 }}>
             Wewnątrz (teraz)
           </Text>
-          <Text variant="titleMedium">{nowValue.toFixed(1)} °C</Text>
+          <Text variant="titleMedium">
+            {hasData ? nowValue.toFixed(1) : "--"} °C
+          </Text>
           <Text variant="bodySmall" style={{ opacity: 0.6 }}>
             Ostatni odczyt
           </Text>
@@ -442,7 +521,7 @@ export default function InsideTemperatureDetails() {
           <Text variant="labelSmall" style={{ opacity: 0.7 }}>
             Status
           </Text>
-          <Text variant="titleMedium">{status}</Text>
+          <Text variant="titleMedium">{hasData ? status : "--"}</Text>
           <Text variant="bodySmall" style={{ opacity: 0.6 }}>
             vs pasmo {TARGET_MIN}–{TARGET_MAX} °C
           </Text>
@@ -451,7 +530,7 @@ export default function InsideTemperatureDetails() {
           <Text variant="labelSmall" style={{ opacity: 0.7 }}>
             Δ do granicy
           </Text>
-          <Text variant="titleMedium">{deltaStr}</Text>
+          <Text variant="titleMedium">{hasData ? deltaStr : "--"}</Text>
           <Text variant="bodySmall" style={{ opacity: 0.6 }}>
             bliższa
           </Text>
