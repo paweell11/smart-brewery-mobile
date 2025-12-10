@@ -1,6 +1,12 @@
 import { useSensorData } from "@/hooks/useSensorData";
 import * as React from "react";
-import { ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { LineChart } from "react-native-gifted-charts";
 import { Text, useTheme } from "react-native-paper";
 import { PhDataType } from "./types";
@@ -12,46 +18,19 @@ const CHART_H = 220;
 // Stała do korekty szerokości ScrollView
 const CONTAINER_PAD = 100;
 const SAFE_RIGHT_MARGIN = 0;
-const BG_RIGHT_EXTEND = 40;
 
-// Konfiguracja skali pH (3 do 7)
+// Docelowa liczba punktów na wykresie.
+const TARGET_POINTS_COUNT = 40;
+
+// Konfiguracja skali pH (3 do 10)
 const PH_MIN_Y = 3;
-// Zakres wartości (7 - 3 = 4)
-const PH_RANGE = 4;
+// Zakres wartości (10 - 3 = 7)
+const PH_RANGE = 7;
 // Etykiety co 0.5
-const Y_LABELS = ["3", "3.5", "4", "4.5", "5", "5.5", "6", "6.5", "7"];
+const Y_LABELS = ["3", "4", "5", "6", "7", "8", "9", "10"];
 
 // Definicja typów zakresów
 type RangeType = "1D" | "3D" | "7D" | "2T" | "4T";
-
-// --- POMOCNICZE FUNKCJE DO GENEROWANIA DANYCH ---
-const generatePhMockData = (hours: number, intervalMinutes: number) => {
-  const points = [];
-  const count = Math.floor((hours * 60) / intervalMinutes);
-  const now = new Date();
-
-  for (let i = 0; i < count; i++) {
-    const time = new Date(
-      now.getTime() - (count - 1 - i) * intervalMinutes * 60000
-    );
-
-    const progress = i / count;
-    const basePh = 5.6 - progress * 1.4;
-    const fluctuation = Math.random() * 0.1 - 0.05;
-
-    points.push({
-      timestamp: time,
-      value: parseFloat((basePh + fluctuation).toFixed(2)),
-    });
-  }
-  return points;
-};
-
-const RAW_DATA_1D = generatePhMockData(24, 30);
-const RAW_DATA_3D = generatePhMockData(72, 60);
-const RAW_DATA_7D = generatePhMockData(168, 120);
-const RAW_DATA_2T = generatePhMockData(336, 240);
-const RAW_DATA_4T = generatePhMockData(672, 360);
 
 // --- FORMATOWANIE DATY ---
 const formatDateTime = (date: Date) => {
@@ -59,6 +38,7 @@ const formatDateTime = (date: Date) => {
   const m = (date.getMonth() + 1).toString().padStart(2, "0");
   const h = date.getHours().toString().padStart(2, "0");
   const min = date.getMinutes().toString().padStart(2, "0");
+  // Sekundy usunięte z formatowania
   return {
     dateStr: `${d}.${m}`,
     timeStr: `${h}:${min}`,
@@ -66,7 +46,7 @@ const formatDateTime = (date: Date) => {
   };
 };
 
-// --- LOGIKA PRZYGOTOWANIA DANYCH ---
+// --- LOGIKA PRZYGOTOWANIA DANYCH (ETYKIETY OSI X) ---
 const prepareDataForChart = (
   rawData: { timestamp: Date; value: number }[],
   range: RangeType,
@@ -75,12 +55,28 @@ const prepareDataForChart = (
   const labelWidth = 60;
   const labelShift = spacing / 2 - labelWidth / 2;
 
+  // Obliczamy interwał etykiet w zależności od liczby punktów
+  const labelInterval = Math.max(1, Math.floor(rawData.length / 5));
+
+  // NAPRAWA NAKŁADANIA SIĘ ETYKIET (FIZYCZNA ODLEGŁOŚĆ):
+  const pointsNeededForLabel = Math.ceil(labelWidth / spacing) + 1;
+
   return rawData.map((item, index) => {
+    const isLast = index === rawData.length - 1;
+    const isPeriodic = index % labelInterval === 0;
+
+    // Obliczamy odległość (liczbę punktów) od tego punktu do końca wykresu
+    const distToEnd = rawData.length - 1 - index;
+
+    // Punkt jest bezpieczny, jeśli jest "Teraz" LUB jest oddalony od końca o wymaganą liczbę punktów
+    const isSafeDistance = distToEnd >= pointsNeededForLabel;
+
     let showLabel = false;
-    if (range === "1D") {
-      if (index % 4 === 0) showLabel = true;
-    } else {
-      if (index % 6 === 0) showLabel = true;
+
+    if (isLast) {
+      showLabel = true;
+    } else if (isPeriodic && isSafeDistance) {
+      showLabel = true;
     }
 
     let labelComponent = undefined;
@@ -112,13 +108,26 @@ const prepareDataForChart = (
 };
 
 export default function PhDetails() {
-  const { data, isSuccess, isPending, isError } = useSensorData<PhDataType[]>({ 
-    sensorPath: "/readings/ph", 
+  const { data, isSuccess, isPending, isError } = useSensorData<PhDataType[]>({
+    sensorPath: "/readings/ph",
     searchParams: [
-      { days: "1" }, { days: "3" }, { days: "7" },
-      { days: "14" }, { days: "28" }
-    ]
+      { days: "1" },
+      { days: "3" },
+      { days: "7" },
+      { days: "14" },
+      { days: "28" },
+    ],
   });
+
+  // --- LOGOWANIE DANYCH DO KONSOLI ---
+  React.useEffect(() => {
+    if (data) {
+      console.log("=== POBRANE DANE Z BACKENDU (PhDetails) ===");
+      data.forEach((d, i) => {
+        console.log(`Zestaw ${i}: ${d ? d.length : 0} punktów`);
+      });
+    }
+  }, [data]);
 
   const theme = useTheme();
   const [w, setW] = React.useState(0);
@@ -126,37 +135,150 @@ export default function PhDetails() {
 
   const spacing = selectedRange === "1D" ? 20 : 12;
 
-  let currentRawData;
-  switch (selectedRange) {
-    case "1D":
-      currentRawData = data[0];
-      break;
-    case "3D":
-      currentRawData = data[1];
-      break;
-    case "7D":
-      currentRawData = data[2];
-      break;
-    case "2T":
-      currentRawData = data[3];
-      break;
-    case "4T":
-      currentRawData = data[4];
-      break;
-    default:
-      currentRawData = data[0];
+  // 1. Wybór odpowiedniego zestawu danych z backendu
+  let rawBackendData: PhDataType[] | null = null;
+
+  if (data && data.length >= 5) {
+    switch (selectedRange) {
+      case "1D":
+        rawBackendData = data[0];
+        break;
+      case "3D":
+        rawBackendData = data[1];
+        break;
+      case "7D":
+        rawBackendData = data[2];
+        break;
+      case "2T":
+        rawBackendData = data[3];
+        break;
+      case "4T":
+        rawBackendData = data[4];
+        break;
+      default:
+        rawBackendData = data[0];
+    }
   }
 
+  // 2. PRZETWARZANIE DANYCH (Memoizacja)
+  const { processedChartData, stats } = React.useMemo(() => {
+    if (!rawBackendData || rawBackendData.length === 0) {
+      return { processedChartData: [], stats: { now: 0, change24h: null } };
+    }
+
+    // --- KROK A: Sortowanie pełnego zestawu danych (Chronologicznie) ---
+    const fullSortedHistory = [...rawBackendData].sort(
+      (a, b) =>
+        new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+    );
+
+    const lastItem = fullSortedHistory[fullSortedHistory.length - 1];
+    const nowValue = lastItem.ph_value;
+    const nowTimestamp = new Date(lastItem.timestamp).getTime();
+
+    // --- KROK B: Obliczanie trendu 24h na PEŁNYCH danych ---
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const targetTime = nowTimestamp - oneDayMs;
+    let change24h: number | null = null;
+
+    const oldestTimestamp = new Date(fullSortedHistory[0].timestamp).getTime();
+
+    if (oldestTimestamp > targetTime + 60 * 60 * 1000) {
+      change24h = null; // Zbyt krótka historia
+    } else {
+      let closestDist = Infinity;
+      let closestVal = null;
+
+      for (const item of fullSortedHistory) {
+        const t = new Date(item.timestamp).getTime();
+        const dist = Math.abs(t - targetTime);
+        if (dist < closestDist) {
+          closestDist = dist;
+          closestVal = item.ph_value;
+        }
+      }
+
+      if (closestVal !== null && closestDist < 4 * 60 * 60 * 1000) {
+        change24h = nowValue - closestVal;
+      } else {
+        change24h = null;
+      }
+    }
+
+    // --- KROK C: Agresywne Próbkowanie (Downsampling) dla WYKRESU ---
+    const totalPoints = fullSortedHistory.length;
+    let sampledData = [];
+
+    if (totalPoints <= TARGET_POINTS_COUNT) {
+      sampledData = fullSortedHistory.map((item) => ({
+        value: item.ph_value,
+        timestamp: new Date(item.timestamp),
+      }));
+    } else {
+      const step = Math.ceil(totalPoints / TARGET_POINTS_COUNT);
+      for (let i = 0; i < totalPoints; i += step) {
+        const item = fullSortedHistory[i];
+        sampledData.push({
+          value: item.ph_value,
+          timestamp: new Date(item.timestamp),
+        });
+      }
+
+      // Zawsze upewnij się, że OSTATNI punkt (Teraz) jest na wykresie
+      const lastSampled = sampledData[sampledData.length - 1];
+      if (lastSampled.timestamp.getTime() !== nowTimestamp) {
+        sampledData.push({
+          value: lastItem.ph_value,
+          timestamp: new Date(lastItem.timestamp),
+        });
+      }
+    }
+
+    return {
+      processedChartData: sampledData,
+      stats: { now: nowValue, change24h },
+    };
+  }, [rawBackendData]);
+
+  // 3. Generowanie finalnych obiektów dla biblioteki wykresów
   const chartData = React.useMemo(
-    () => prepareDataForChart(currentRawData, selectedRange, spacing),
-    [currentRawData, selectedRange, spacing]
+    () => prepareDataForChart(processedChartData, selectedRange, spacing),
+    [processedChartData, selectedRange, spacing]
   );
 
-  const nowValue = currentRawData[currentRawData.length - 1].value;
-  const prevIndex = Math.max(0, currentRawData.length - 3);
-  const prevValue = currentRawData[prevIndex].value;
-  const trend = nowValue - prevValue;
-  const trendStr = `${trend >= 0 ? "+" : ""}${trend.toFixed(2)}`;
+  const hasData = processedChartData.length > 0;
+
+  // Formatowanie tekstu trendu
+  let trendStr = "Brak danych\nodniesienia";
+  let isTrendAvailable = false;
+
+  if (hasData) {
+    if (stats.change24h !== null) {
+      const val = stats.change24h;
+      trendStr = `${val >= 0 ? "+" : ""}${val.toFixed(2)}`;
+      isTrendAvailable = true;
+    }
+  }
+
+  if (isPending) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          minHeight: 300,
+          marginHorizontal: -CONTAINER_PAD,
+          paddingLeft: CONTAINER_PAD,
+        }}
+      >
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+        <Text style={{ marginTop: 10, opacity: 0.6 }}>
+          Pobieranie danych...
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -211,119 +333,131 @@ export default function PhDetails() {
         })}
       </View>
 
-      {w > 0 && (
+      {!hasData ? (
         <View
           style={{
-            marginTop: 20,
-            position: "relative",
-            overflow: "visible",
-            width: "100%",
+            height: CHART_H,
+            justifyContent: "center",
+            alignItems: "center",
           }}
         >
-          {(() => {
-            const chartWidth = w - 2 * CONTAINER_PAD - SAFE_RIGHT_MARGIN;
+          <Text>Brak danych dla wybranego okresu.</Text>
+        </View>
+      ) : (
+        w > 0 && (
+          <View
+            style={{
+              marginTop: 20,
+              position: "relative",
+              overflow: "visible",
+              width: "100%",
+            }}
+          >
+            {(() => {
+              const chartWidth = w - 2 * CONTAINER_PAD - SAFE_RIGHT_MARGIN;
 
-            return (
-              // Wrapper z Z-Index i Overflow: Visible - KLUCZOWE dla widoczności tooltipa
-              <View style={{ zIndex: 10, elevation: 10, overflow: "visible" }}>
-                <LineChart
-                  key={`${w}-${selectedRange}`}
-                  width={chartWidth}
-                  height={CHART_H}
-                  data={chartData}
-                  spacing={spacing}
-                  curved
-                  thickness={3}
-                  hideRules={false}
-                  yAxisLabelWidth={Y_LABEL_W}
-                  initialSpacing={LEFT_PAD}
-                  endSpacing={5}
-                  yAxisColor={theme.colors.outlineVariant}
-                  xAxisColor={theme.colors.outlineVariant}
-                  yAxisTextStyle={{
-                    opacity: 0.7,
-                    color: theme.colors.onSurface,
-                  }}
-                  xAxisLabelTextStyle={{
-                    opacity: 0.7,
-                    color: theme.colors.onSurface,
-                  }}
-                  color={theme.colors.primary}
-                  yAxisOffset={PH_MIN_Y}
-                  maxValue={PH_RANGE}
-                  yAxisLabelTexts={Y_LABELS}
-                  noOfSections={Y_LABELS.length - 1}
-                  scrollToEnd
-                  scrollAnimation={false}
-                  hideDataPoints={true}
-                  // Konfiguracja tooltipa identyczna jak w index.tsx
-                  pointerConfig={{
-                    pointerStripHeight: CHART_H,
-                    pointerStripColor: theme.colors.outlineVariant,
-                    pointerStripWidth: 2,
-                    pointerColor: theme.colors.primary,
-                    radius: 4,
-                    pointerLabelWidth: 100,
-                    pointerLabelHeight: 60,
-                    activatePointersOnLongPress: true,
-                    autoAdjustPointerLabelPosition: false,
-                    shiftPointerLabelY: 45,
+              return (
+                <View
+                  style={{ zIndex: 10, elevation: 10, overflow: "visible" }}
+                >
+                  <LineChart
+                    key={`${w}-${selectedRange}`}
+                    width={chartWidth}
+                    height={CHART_H}
+                    data={chartData}
+                    spacing={spacing}
+                    curved
+                    thickness={3}
+                    hideRules={false}
+                    yAxisLabelWidth={Y_LABEL_W}
+                    initialSpacing={LEFT_PAD}
+                    endSpacing={6}
+                    yAxisColor={theme.colors.outlineVariant}
+                    xAxisColor={theme.colors.outlineVariant}
+                    yAxisTextStyle={{
+                      opacity: 0.7,
+                      color: theme.colors.onSurface,
+                    }}
+                    xAxisLabelTextStyle={{
+                      opacity: 0.7,
+                      color: theme.colors.onSurface,
+                    }}
+                    color={theme.colors.primary}
+                    yAxisOffset={PH_MIN_Y}
+                    maxValue={PH_RANGE}
+                    yAxisLabelTexts={Y_LABELS}
+                    noOfSections={Y_LABELS.length - 1}
+                    scrollToEnd
+                    scrollAnimation={false}
+                    hideDataPoints={true}
+                    pointerConfig={{
+                      pointerStripHeight: CHART_H,
+                      pointerStripColor: theme.colors.outlineVariant,
+                      pointerStripWidth: 2,
+                      pointerColor: theme.colors.primary,
+                      radius: 4,
+                      pointerLabelWidth: 100,
+                      pointerLabelHeight: 60,
+                      activatePointersOnLongPress: true,
+                      autoAdjustPointerLabelPosition: false,
+                      shiftPointerLabelY: 45,
 
-                    pointerLabelComponent: (items: any) => {
-                      const item = items[0];
-                      const { full } = formatDateTime(item.timestamp);
+                      pointerLabelComponent: (items: any) => {
+                        const item = items[0];
+                        const { full } = formatDateTime(item.timestamp);
 
-                      return (
-                        <View
-                          style={{
-                            height: 60,
-                            width: 100,
-                            justifyContent: "flex-end",
-                            alignItems: "center",
-                          }}
-                        >
+                        return (
                           <View
                             style={{
-                              backgroundColor: theme.colors.inverseSurface,
-                              borderRadius: 8,
-                              paddingHorizontal: 8,
-                              paddingVertical: 4,
+                              height: 60,
+                              width: 100,
+                              justifyContent: "flex-end",
+                              alignItems: "center",
                             }}
                           >
-                            <Text
+                            <View
                               style={{
-                                color: theme.colors.inverseOnSurface,
-                                fontWeight: "bold",
-                                fontSize: 14,
-                                textAlign: "center",
+                                backgroundColor: theme.colors.inverseSurface,
+                                borderRadius: 8,
+                                paddingHorizontal: 8,
+                                paddingVertical: 4,
                               }}
                             >
-                              pH: {item.value}
-                            </Text>
-                            <Text
-                              style={{
-                                color: theme.colors.inverseOnSurface,
-                                fontSize: 10,
-                                textAlign: "center",
-                              }}
-                            >
-                              {full}
-                            </Text>
+                              <Text
+                                style={{
+                                  color: theme.colors.inverseOnSurface,
+                                  fontWeight: "bold",
+                                  fontSize: 14,
+                                  textAlign: "center",
+                                }}
+                              >
+                                pH: {item.value}
+                              </Text>
+                              <Text
+                                style={{
+                                  color: theme.colors.inverseOnSurface,
+                                  fontSize: 10,
+                                  textAlign: "center",
+                                }}
+                              >
+                                {full}
+                              </Text>
+                            </View>
                           </View>
-                        </View>
-                      );
-                    },
-                  }}
-                />
-              </View>
-            );
-          })()}
-        </View>
+                        );
+                      },
+                    }}
+                  />
+                </View>
+              );
+            })()}
+          </View>
+        )
       )}
 
       <View style={{ alignItems: "center", marginTop: 8 }}>
         <Text variant="labelSmall" style={{ opacity: 0.5 }}>
-          Przytrzymaj wykres, aby sprawdzić punkt
+          {hasData ? "Przytrzymaj wykres, aby sprawdzić punkt" : ""}
         </Text>
       </View>
 
@@ -337,14 +471,16 @@ export default function PhDetails() {
           <Text variant="labelSmall" style={{ opacity: 0.7 }}>
             pH (teraz)
           </Text>
-          <Text variant="titleMedium">{nowValue.toFixed(2)}</Text>
+          <Text variant="titleMedium">
+            {hasData ? stats.now.toFixed(2) : "--"}
+          </Text>
           <Text variant="bodySmall" style={{ opacity: 0.6 }}>
             Ostatni odczyt
           </Text>
         </View>
         <View style={styles.col}>
           <Text variant="labelSmall" style={{ opacity: 0.7 }}>
-            Trend (1h)
+            Zmiana (24h)
           </Text>
           <Text variant="titleMedium">{trendStr}</Text>
           <Text variant="bodySmall" style={{ opacity: 0.6 }}>

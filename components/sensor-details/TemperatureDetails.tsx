@@ -309,7 +309,7 @@ export default function TemperatureDetails() {
                               fontSize: 12,
                             }}
                           >
-                            In: {item.value}°C
+                            Wew: {item.value}°C
                           </Text>
                           {/* items[0].value2 to druga seria (Outside) jeśli istnieje w data point */}
                           {item.value2 !== undefined && (
@@ -320,7 +320,7 @@ export default function TemperatureDetails() {
                                 fontSize: 12,
                               }}
                             >
-                              Out: {item.value2}°C
+                              Zew: {item.value2}°C
                             </Text>
                           )}
                         </>
@@ -366,8 +366,7 @@ export default function TemperatureDetails() {
                   } // Tylko w trybie dual
                   spacing={spacing}
                   initialSpacing={LEFT_PAD}
-                  endSpacing={5} // Do końca
-                  // Style linii
+                  endSpacing={6}
                   curved
                   thickness={3}
                   thickness2={3} // Druga linia

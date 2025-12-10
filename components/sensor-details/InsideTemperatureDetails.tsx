@@ -328,7 +328,7 @@ export default function InsideTemperatureDetails() {
                     hideRules={false}
                     yAxisLabelWidth={Y_LABEL_W}
                     initialSpacing={LEFT_PAD}
-                    endSpacing={5}
+                    endSpacing={6}
                     yAxisColor={theme.colors.outlineVariant}
                     xAxisColor={theme.colors.outlineVariant}
                     yAxisTextStyle={{

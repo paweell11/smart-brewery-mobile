@@ -277,8 +277,7 @@ export default function EnvironmentDetails() {
                   hideRules={false}
                   yAxisLabelWidth={Y_LABEL_W}
                   initialSpacing={LEFT_PAD}
-                  // endSpacing zmieniony na 5 zgodnie z życzeniem
-                  endSpacing={5}
+                  endSpacing={6}
                   yAxisColor={theme.colors.outlineVariant}
                   xAxisColor={theme.colors.outlineVariant}
                   yAxisTextStyle={{
