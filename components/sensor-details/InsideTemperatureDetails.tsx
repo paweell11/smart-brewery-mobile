@@ -14,9 +14,11 @@ import { TempDataType } from "./types";
 // --- KONFIGURACJA WYKRESU ---
 const Y_LABEL_W = 40;
 const LEFT_PAD = 10;
-const FIXED_MAX = 30;
+const FIXED_MAX = 35;
 const CHART_H = 220;
-const Y_LABELS = ["0", "5", "10", "15", "20", "25", "30"].map((v) => `${v}°`);
+const Y_LABELS = ["0", "5", "10", "15", "20", "25", "30", "35"].map(
+  (v) => `${v}°`
+);
 
 // --- KONFIGURACJA ZAKRESÓW ---
 const TARGET_MIN = 16;
