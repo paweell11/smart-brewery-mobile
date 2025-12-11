@@ -11,28 +11,21 @@ import { LineChart } from "react-native-gifted-charts";
 import { SegmentedButtons, Text, useTheme } from "react-native-paper";
 import { TempDataType } from "./types";
 
-// --- KONFIGURACJA WYKRESU (Bliźniacza do index.tsx) ---
+// --- KONFIGURACJA WYKRESU ---
 const Y_LABEL_W = 40;
 const LEFT_PAD = 10;
 const RIGHT_PAD = Y_LABEL_W + LEFT_PAD;
-// Stała do korekty szerokości ScrollView
 const CONTAINER_PAD = 100;
 const SAFE_RIGHT_MARGIN = 0;
-const BG_RIGHT_EXTEND = 40; // Używane do obliczenia szerokości obszaru rysowania
+const BG_RIGHT_EXTEND = 40;
 const CHART_H = 220;
 const TARGET_POINTS_COUNT = 40;
-
-// DEFINICJA ETYKIET OSI Y
-// Tryb Dual: 0-35 co 5 stopni
 const DUAL_Y_LABELS = ["0", "5", "10", "15", "20", "25", "30", "35"].map(
   (v) => `${v}°`
 );
-// Tryb Delta: -4 do 12 co 2 stopnie
 const DELTA_Y_LABELS = ["-4", "-2", "0", "2", "4", "6", "8", "10", "12"].map(
   (v) => `${v}°`
 );
-
-// Definicja typów zakresów
 type RangeType = "1D" | "3D" | "7D" | "2T" | "4T";
 
 // --- FORMATOWANIE DATY ---
@@ -59,9 +52,7 @@ const prepareDataForChart = (
   const labelShift = spacing / 2 - labelWidth / 2;
   const step = range === "1D" ? 4 : 6;
 
-  // Mapowanie danych w zależności od trybu
   return mergedData.map((item, index) => {
-    // Liczymy indeks od końca
     const indexFromEnd = mergedData.length - 1 - index;
     let showLabel = false;
 
@@ -90,13 +81,12 @@ const prepareDataForChart = (
 
     if (mode === "dual") {
       return {
-        value: item.inside, // Primary line (Inside)
-        value2: item.outside, // Secondary line (Outside)
+        value: item.inside,
+        value2: item.outside,
         timestamp: item.timestamp,
         labelComponent: labelComponent,
       };
     } else {
-      // Delta mode
       const diff = parseFloat((item.inside - item.outside).toFixed(1));
       return {
         value: diff,
@@ -110,8 +100,7 @@ const prepareDataForChart = (
 export default function TemperatureDetails() {
   const theme = useTheme();
 
-  // 1. POBIERANIE DANYCH
-  // Wewnątrz
+  // POBIERANIE DANYCH
   const insideQuery = useSensorData<TempDataType[]>({
     sensorPath: "/readings/temperature",
     searchParams: [
@@ -123,8 +112,6 @@ export default function TemperatureDetails() {
     ],
   });
 
-  // Zewnątrz
-  // Zakładamy, że typ danych jest taki sam (ma pole timestamp i temperature_celsius)
   const outsideQuery = useSensorData<TempDataType[]>({
     sensorPath: "/readings/outsideTemp",
     searchParams: [
@@ -158,22 +145,18 @@ export default function TemperatureDetails() {
   const [w, setW] = React.useState(0);
   const [mode, setMode] = React.useState<"dual" | "delta">("dual");
   const [selectedRange, setSelectedRange] = React.useState<RangeType>("1D");
-
-  // Kolory
   const colorInside = theme.colors.primary;
-  const colorOutside = theme.colors.tertiary; // Kolor dla "Otoczenie"
+  const colorOutside = theme.colors.tertiary;
   const colorDelta = theme.colors.secondary;
 
   const spacing = selectedRange === "1D" ? 20 : 12;
 
-  // 2. WYBÓR SUROWYCH DANYCH
   let rawIn: TempDataType[] = [];
   let rawOut: TempDataType[] = [];
 
   const inData = insideQuery.data;
   const outData = outsideQuery.data;
 
-  // Funkcja pomocnicza do pobierania indeksu z tablicy danych
   const getIndexForRange = (r: RangeType) => {
     switch (r) {
       case "1D":
@@ -200,9 +183,8 @@ export default function TemperatureDetails() {
     rawOut = outData[idx]!;
   }
 
-  // 3. MERGING & DOWNSAMPLING
+  // MERGING and DOWNSAMPLING
   const { processedChartData, stats } = React.useMemo(() => {
-    // Potrzebujemy przynajmniej danych wewnętrznych
     if (rawIn.length === 0) {
       return {
         processedChartData: [],
@@ -220,20 +202,14 @@ export default function TemperatureDetails() {
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
     );
 
-    // Statystyki "Teraz" (ostatnie dostępne punkty, niezależnie od synchronizacji)
     const lastIn = sortedIn[sortedIn.length - 1];
     const lastOut =
       sortedOut.length > 0 ? sortedOut[sortedOut.length - 1] : null;
 
     const nowInsideVal = lastIn.temperature_celsius;
     const nowOutsideVal = lastOut ? lastOut.temperature_celsius : 0;
-
-    // Synchronizacja: Dla każdego punktu IN znajdź najbliższy OUT
-    // Tworzymy połączoną listę
     const mergedList: { timestamp: Date; inside: number; outside: number }[] =
       [];
-
-    // Lepsza implementacja MERGE (liniowa O(N+M)):
     let pOut = 0;
     for (let i = 0; i < sortedIn.length; i++) {
       const inItem = sortedIn[i];
@@ -243,7 +219,6 @@ export default function TemperatureDetails() {
         sortedOut.length > 0 ? sortedOut[0].temperature_celsius : 0;
 
       if (sortedOut.length > 0) {
-        // Przesuwaj pOut dopóki następny element nie jest bliżej niż obecny
         while (pOut < sortedOut.length - 1) {
           const curr = sortedOut[pOut];
           const next = sortedOut[pOut + 1];
@@ -270,7 +245,6 @@ export default function TemperatureDetails() {
       });
     }
 
-    // Downsampling do TARGET_POINTS_COUNT
     const totalPoints = mergedList.length;
     let sampledData = [];
 
@@ -281,7 +255,6 @@ export default function TemperatureDetails() {
       for (let i = 0; i < totalPoints; i += step) {
         sampledData.push(mergedList[i]);
       }
-      // Zawsze dodaj ostatni punkt (Teraz)
       const lastMerged = mergedList[mergedList.length - 1];
       const lastSampled = sampledData[sampledData.length - 1];
       if (lastSampled.timestamp.getTime() !== lastMerged.timestamp.getTime()) {
@@ -295,30 +268,21 @@ export default function TemperatureDetails() {
     };
   }, [rawIn, rawOut]);
 
-  // Generowanie danych dla wykresu (Label Component itp.)
   const chartData = React.useMemo(
     () => prepareDataForChart(processedChartData, selectedRange, spacing, mode),
     [processedChartData, selectedRange, spacing, mode]
   );
 
   const hasData = processedChartData.length > 0;
-
-  // Statystyki "Teraz"
   const nowInside = stats.nowInside;
   const nowOutside = stats.nowOutside;
   const diff = nowInside - nowOutside;
   const diffStr = `${diff >= 0 ? "+" : ""}${diff.toFixed(1)}°C`;
-
-  // Konfiguracja Osi Y w zależności od trybu
   const isDual = mode === "dual";
-
-  // Obliczenia dla skal:
-  // Dual: 0-35 (Start 0, Range 35)
-  // Delta: -4 do 12 (Start -4, Range 16)
   const yAxisOffset = isDual ? 0 : -4;
   const rangeVal = isDual ? 35 : 16;
   const yLabels = isDual ? DUAL_Y_LABELS : DELTA_Y_LABELS;
-  const sections = isDual ? 7 : 8; // Dual: co 5 (7 sekcji = 35), Delta: co 2 (16/2=8 sekcji)
+  const sections = isDual ? 7 : 8;
 
   const isPending = insideQuery.isPending || outsideQuery.isPending;
 
@@ -366,8 +330,6 @@ export default function TemperatureDetails() {
           </Text>
         </View>
       </View>
-
-      {/* Przełącznik trybu */}
       <SegmentedButtons
         value={mode}
         onValueChange={(v) => setMode(v as "dual" | "delta")}
@@ -377,8 +339,6 @@ export default function TemperatureDetails() {
           { value: "delta", label: "Różnica" },
         ]}
       />
-
-      {/* Przyciski zakresu (identyczne jak w index.tsx) */}
       <View style={styles.rangeContainer}>
         {(["1D", "3D", "7D", "2T", "4T"] as const).map((range) => {
           const isActive = selectedRange === range;
@@ -430,10 +390,7 @@ export default function TemperatureDetails() {
             }}
           >
             {(() => {
-              // Obliczenia szerokości identyczne jak w index.tsx
               const chartWidth = w - 2 * CONTAINER_PAD - SAFE_RIGHT_MARGIN;
-
-              // Konfiguracja Tooltipa (Pointer)
               const pointerConfig = {
                 pointerStripHeight: CHART_H,
                 pointerStripColor: theme.colors.outlineVariant,
@@ -444,10 +401,9 @@ export default function TemperatureDetails() {
                 pointerLabelHeight: 60,
                 activatePointersOnLongPress: true,
                 autoAdjustPointerLabelPosition: false,
-                shiftPointerLabelY: 45, // Blisko wykresu
-
+                shiftPointerLabelY: 45,
                 pointerLabelComponent: (items: any) => {
-                  const item = items[0]; // W gifted charts items to tablica punktów w danym indeksie
+                  const item = items[0];
                   const { full } = formatDateTime(item.timestamp);
 
                   return (
@@ -468,8 +424,6 @@ export default function TemperatureDetails() {
                           alignItems: "center",
                         }}
                       >
-                        {/* Wyświetlanie wartości w zależności od trybu */}
-                        {/* Ujednolicony kolor tekstu: inverseOnSurface (biały/jasny) dla czytelności */}
                         {mode === "dual" ? (
                           <>
                             <Text
@@ -479,9 +433,8 @@ export default function TemperatureDetails() {
                                 fontSize: 12,
                               }}
                             >
-                              Wew: {item.value}°C
+                              In: {item.value}°C
                             </Text>
-                            {/* items[0].value2 to druga seria (Outside) jeśli istnieje w data point */}
                             {item.value2 !== undefined && (
                               <Text
                                 style={{
@@ -490,7 +443,7 @@ export default function TemperatureDetails() {
                                   fontSize: 12,
                                 }}
                               >
-                                Zew: {item.value2}°C
+                                Out: {item.value2}°C
                               </Text>
                             )}
                           </>
@@ -527,23 +480,20 @@ export default function TemperatureDetails() {
                     key={`${w}-${selectedRange}-${mode}`}
                     width={chartWidth}
                     height={CHART_H}
-                    // Przekazujemy dane
-                    data={chartData} // Zawiera value (Inside) i labelComponent
+                    data={chartData}
                     data2={
                       mode === "dual"
                         ? chartData.map((d) => ({ value: d.value2 }))
                         : undefined
-                    } // Tylko w trybie dual
+                    }
                     spacing={spacing}
                     initialSpacing={LEFT_PAD}
-                    endSpacing={6} // Zmiana na 6
-                    // Style linii
+                    endSpacing={6}
                     curved
                     thickness={3}
-                    thickness2={3} // Druga linia
+                    thickness2={3}
                     color1={mode === "dual" ? colorInside : colorDelta}
                     color2={colorOutside}
-                    // Osie
                     yAxisLabelWidth={Y_LABEL_W}
                     yAxisColor={theme.colors.outlineVariant}
                     xAxisColor={theme.colors.outlineVariant}
@@ -555,13 +505,10 @@ export default function TemperatureDetails() {
                       opacity: 0.7,
                       color: theme.colors.onSurface,
                     }}
-                    // --- KONFIGURACJA ZAKRESÓW ---
                     yAxisOffset={yAxisOffset}
                     maxValue={rangeVal}
                     yAxisLabelTexts={yLabels}
                     noOfSections={sections}
-                    // -----------------------------
-
                     scrollToEnd
                     scrollAnimation={false}
                     hideDataPoints={true}
@@ -580,8 +527,6 @@ export default function TemperatureDetails() {
           {hasData ? "Przytrzymaj wykres, aby sprawdzić punkt" : ""}
         </Text>
       </View>
-
-      {/* Legenda */}
       {mode === "dual" ? (
         <View style={styles.legend}>
           <View style={[styles.dot, { backgroundColor: colorInside }]} />
@@ -595,8 +540,6 @@ export default function TemperatureDetails() {
           <Text>ΔT (wewnątrz – otoczenie)</Text>
         </View>
       )}
-
-      {/* Statystyki pod wykresem (Responsywne) */}
       <View style={styles.row}>
         <View style={styles.col}>
           <Text variant="labelSmall" style={{ opacity: 0.7 }}>
@@ -641,14 +584,16 @@ const styles = StyleSheet.create({
   },
   rangeContainer: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
+    justifyContent: "space-between",
     marginBottom: 8,
-    gap: 8,
+    gap: 4,
   },
   rangeButton: {
-    paddingHorizontal: 12,
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 6,
+    paddingHorizontal: 0,
     borderRadius: 16,
   },
   rangeText: {
@@ -663,8 +608,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   dot: { width: 10, height: 10, borderRadius: 6, marginRight: 6 },
-
-  // Responsywny grid
   row: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -673,6 +616,6 @@ const styles = StyleSheet.create({
   },
   col: {
     flexGrow: 1,
-    minWidth: 100, // Zapobiega ściskaniu tekstu na małych ekranach
+    minWidth: 100,
   },
 });

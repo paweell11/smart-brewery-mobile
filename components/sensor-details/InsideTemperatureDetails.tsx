@@ -59,8 +59,6 @@ const prepareDataForChart = (
   const labelShift = spacing / 2 - labelWidth / 2;
 
   // Ustalamy sztywny krok etykiet w zależności od zagęszczenia punktów (spacing).
-  // Dla 1D (spacing 20) -> co 4 punkty
-  // Dla reszty (spacing 12) -> co 6 punktów
   const step = range === "1D" ? 4 : 6;
 
   return rawData.map((item, index) => {
@@ -133,7 +131,6 @@ export default function InsideTemperatureDetails() {
   const vividGreen = "#16a34a";
   const spacing = selectedRange === "1D" ? 20 : 12;
 
-  // 2. PRZETWARZANIE DANYCH
   // Wybór surowych danych
   let rawBackendData: TempDataType[] | null = null;
   if (data && data.length >= 5) {
@@ -192,7 +189,6 @@ export default function InsideTemperatureDetails() {
         });
       }
 
-      // Zawsze dodaj ostatni punkt
       const lastSampled = sampledData[sampledData.length - 1];
       if (lastSampled.timestamp.getTime() !== nowTimestamp) {
         sampledData.push({
@@ -215,7 +211,7 @@ export default function InsideTemperatureDetails() {
 
   const hasData = processedChartData.length > 0;
 
-  // Obliczanie statusów (istniejąca logika)
+  // Obliczanie statusów
   const nowValue = stats.now;
   const status =
     nowValue < TARGET_MIN
@@ -328,7 +324,6 @@ export default function InsideTemperatureDetails() {
           >
             {(() => {
               const chartWidth = w - 2 * CONTAINER_PAD - SAFE_RIGHT_MARGIN;
-              // Tło musi być szersze, aby pokryć cały obszar wykresu włącznie z dodatkowym paddingiem
               const chartDrawAreaWidth =
                 chartWidth - Y_LABEL_W + BG_RIGHT_EXTEND;
 
@@ -405,7 +400,6 @@ export default function InsideTemperatureDetails() {
                       hideRules={false}
                       yAxisLabelWidth={Y_LABEL_W}
                       initialSpacing={LEFT_PAD}
-                      // endSpacing = 6 zgodnie z wymaganiem
                       endSpacing={6}
                       yAxisColor={theme.colors.outlineVariant}
                       xAxisColor={theme.colors.outlineVariant}
@@ -552,15 +546,16 @@ const styles = StyleSheet.create({
   },
   rangeContainer: {
     flexDirection: "row",
-    // Dodano wrapowanie, aby przyciski zmieściły się na małych ekranach
-    flexWrap: "wrap",
-    justifyContent: "center",
+    justifyContent: "space-between",
     marginBottom: 8,
-    gap: 8,
+    gap: 4,
   },
   rangeButton: {
-    paddingHorizontal: 12,
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 6,
+    paddingHorizontal: 0,
     borderRadius: 16,
   },
   rangeText: {

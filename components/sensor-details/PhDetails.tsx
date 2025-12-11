@@ -15,18 +15,14 @@ import { PhDataType } from "./types";
 const Y_LABEL_W = 40;
 const LEFT_PAD = 10;
 const CHART_H = 220;
-// Stała do korekty szerokości ScrollView
 const CONTAINER_PAD = 100;
 const SAFE_RIGHT_MARGIN = 0;
 
 // Docelowa liczba punktów na wykresie.
 const TARGET_POINTS_COUNT = 40;
 
-// Konfiguracja skali pH (3 do 10)
 const PH_MIN_Y = 3;
-// Zakres wartości (10 - 3 = 7)
 const PH_RANGE = 7;
-// Etykiety co 0.5
 const Y_LABELS = ["3", "4", "5", "6", "7", "8", "9", "10"];
 
 // Definicja typów zakresów
@@ -57,8 +53,6 @@ const prepareDataForChart = (
 
   // Obliczamy interwał etykiet w zależności od liczby punktów
   const labelInterval = Math.max(1, Math.floor(rawData.length / 5));
-
-  // NAPRAWA NAKŁADANIA SIĘ ETYKIET (FIZYCZNA ODLEGŁOŚĆ):
   const pointsNeededForLabel = Math.ceil(labelWidth / spacing) + 1;
 
   return rawData.map((item, index) => {
@@ -135,7 +129,7 @@ export default function PhDetails() {
 
   const spacing = selectedRange === "1D" ? 20 : 12;
 
-  // 1. Wybór odpowiedniego zestawu danych z backendu
+  // Wybór surowych danych
   let rawBackendData: PhDataType[] | null = null;
 
   if (data && data.length >= 5) {
@@ -160,13 +154,13 @@ export default function PhDetails() {
     }
   }
 
-  // 2. PRZETWARZANIE DANYCH (Memoizacja)
+  // przetwarzanie danych
   const { processedChartData, stats } = React.useMemo(() => {
     if (!rawBackendData || rawBackendData.length === 0) {
       return { processedChartData: [], stats: { now: 0, change24h: null } };
     }
 
-    // --- KROK A: Sortowanie pełnego zestawu danych (Chronologicznie) ---
+    // Sortowanie chronologiczne
     const fullSortedHistory = [...rawBackendData].sort(
       (a, b) =>
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -184,7 +178,7 @@ export default function PhDetails() {
     const oldestTimestamp = new Date(fullSortedHistory[0].timestamp).getTime();
 
     if (oldestTimestamp > targetTime + 60 * 60 * 1000) {
-      change24h = null; // Zbyt krótka historia
+      change24h = null;
     } else {
       let closestDist = Infinity;
       let closestVal = null;
@@ -205,7 +199,7 @@ export default function PhDetails() {
       }
     }
 
-    // --- KROK C: Agresywne Próbkowanie (Downsampling) dla WYKRESU ---
+    // Downsampling
     const totalPoints = fullSortedHistory.length;
     let sampledData = [];
 
@@ -248,7 +242,6 @@ export default function PhDetails() {
 
   const hasData = processedChartData.length > 0;
 
-  // Formatowanie tekstu trendu
   let trendStr = "Brak danych\nodniesienia";
   let isTrendAvailable = false;
 
@@ -457,7 +450,7 @@ export default function PhDetails() {
 
       <View style={{ alignItems: "center", marginTop: 8 }}>
         <Text variant="labelSmall" style={{ opacity: 0.5 }}>
-          {hasData ? "Przytrzymaj wykres, aby sprawdzić punkt" : ""}
+          Przytrzymaj wykres, aby sprawdzić punkt
         </Text>
       </View>
 
@@ -499,14 +492,16 @@ const styles = StyleSheet.create({
   },
   rangeContainer: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
+    justifyContent: "space-between",
     marginBottom: 8,
-    gap: 8,
+    gap: 4,
   },
   rangeButton: {
-    paddingHorizontal: 12,
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 6,
+    paddingHorizontal: 0,
     borderRadius: 16,
   },
   rangeText: {

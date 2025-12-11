@@ -15,36 +15,11 @@ import { WeightDataType } from "./types";
 const Y_LABEL_W = 40;
 const LEFT_PAD = 10;
 const CHART_H = 220;
-// Stała do korekty szerokości ScrollView
 const CONTAINER_PAD = 100;
 const SAFE_RIGHT_MARGIN = 0;
-
-// Docelowa liczba punktów na wykresie.
 const TARGET_POINTS_COUNT = 40;
-
-// Konfiguracja skali Wagi (0 do 300)
-const WEIGHT_MIN_Y = 0;
-// Zakres wartości (300 - 0 = 300)
 const WEIGHT_RANGE = 300;
-// Etykiety co 25 (0, 25, 50... 300)
-// 300 / 25 = 12 sekcji
-const Y_LABELS = [
-  "0",
-  "25",
-  "50",
-  "75",
-  "100",
-  "125",
-  "150",
-  "175",
-  "200",
-  "225",
-  "250",
-  "275",
-  "300",
-];
-
-// Definicja typów zakresów
+const Y_LABELS = ["0", "50", "100", "150", "200", "250", "300"];
 type RangeType = "1D" | "3D" | "7D" | "2T" | "4T";
 
 // --- FORMATOWANIE DATY ---
@@ -69,22 +44,13 @@ const prepareDataForChart = (
   const labelWidth = 60;
   const labelShift = spacing / 2 - labelWidth / 2;
 
-  // Ustalamy sztywny krok etykiet w zależności od zagęszczenia punktów (spacing).
-  // Dla 1D (spacing 20) -> co 4 punkty (4 * 20 = 80px odstępu)
-  // Dla reszty (spacing 12) -> co 6 punktów (6 * 12 = 72px odstępu)
-  // Zapewnia to wizualną spójność i czytelność.
   const step = range === "1D" ? 4 : 6;
 
   return rawData.map((item, index) => {
-    // Liczymy indeks od końca, aby etykiety były "zakotwiczone" z prawej strony (od "Teraz").
-    // Dzięki temu ostatnia etykieta i poprzednie mają zawsze równy odstęp.
     const indexFromEnd = rawData.length - 1 - index;
 
     let showLabel = false;
 
-    // Prosta arytmetyka: jeśli indeks od końca dzieli się przez krok bez reszty, pokazujemy etykietę.
-    // indexFromEnd = 0 (ostatni element) -> 0 % step === 0 -> PRAWDA
-    // indexFromEnd = step -> step % step === 0 -> PRAWDA
     if (indexFromEnd % step === 0) {
       showLabel = true;
     }
@@ -109,8 +75,11 @@ const prepareDataForChart = (
       );
     }
 
+    const displayValue = Math.min(Math.max(item.value, 0), WEIGHT_RANGE);
+
     return {
-      value: item.value,
+      value: displayValue,
+      originalValue: item.value,
       timestamp: item.timestamp,
       labelComponent: labelComponent,
     };
@@ -147,7 +116,7 @@ export default function WeightDetails() {
 
   const spacing = selectedRange === "1D" ? 20 : 12;
 
-  // 1. Wybór odpowiedniego zestawu danych z backendu
+  // Wybór surowych danych
   let rawBackendData: WeightDataType[] | null = null;
 
   if (data && data.length >= 5) {
@@ -172,13 +141,13 @@ export default function WeightDetails() {
     }
   }
 
-  // 2. PRZETWARZANIE DANYCH (Memoizacja)
+  //  Przetwarzanie danych
   const { processedChartData, stats } = React.useMemo(() => {
     if (!rawBackendData || rawBackendData.length === 0) {
       return { processedChartData: [], stats: { now: 0, change24h: null } };
     }
 
-    // --- KROK A: Sortowanie pełnego zestawu danych (Chronologicznie) ---
+    // Sortowanie chronologiczne
     const fullSortedHistory = [...rawBackendData].sort(
       (a, b) =>
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -188,17 +157,14 @@ export default function WeightDetails() {
     const nowValue = lastItem.weight_kg;
     const nowTimestamp = new Date(lastItem.timestamp).getTime();
 
-    // --- KROK B: Obliczanie Zmiany (Trendu) ZAWSZE DLA 24H ---
-    // Niezależnie od wybranego zakresu, zawsze szukamy zmiany w ciągu ostatnich 24h.
     const oneDayMs = 24 * 60 * 60 * 1000;
     const targetTime = nowTimestamp - oneDayMs;
     let change24h: number | null = null;
 
     const oldestTimestamp = new Date(fullSortedHistory[0].timestamp).getTime();
 
-    // Sprawdzenie czy mamy wystarczająco stare dane (margines 1h)
     if (oldestTimestamp > targetTime + 60 * 60 * 1000) {
-      change24h = null; // Historia jest krótsza niż 24h (minus margines)
+      change24h = null;
     } else {
       let closestDist = Infinity;
       let closestVal = null;
@@ -212,7 +178,6 @@ export default function WeightDetails() {
         }
       }
 
-      // Akceptujemy punkt, jeśli jest w miarę blisko celu (np. max 4h odchyłki)
       if (closestVal !== null && closestDist < 4 * 60 * 60 * 1000) {
         change24h = nowValue - closestVal;
       } else {
@@ -220,7 +185,7 @@ export default function WeightDetails() {
       }
     }
 
-    // --- KROK C: Agresywne Próbkowanie (Downsampling) dla WYKRESU ---
+    // Downsampling
     const totalPoints = fullSortedHistory.length;
     let sampledData = [];
 
@@ -262,7 +227,6 @@ export default function WeightDetails() {
 
   const hasData = processedChartData.length > 0;
 
-  // Formatowanie tekstu trendu
   let changeStr = "Brak danych\nodniesienia";
 
   if (hasData) {
@@ -369,101 +333,109 @@ export default function WeightDetails() {
               const chartWidth = w - 2 * CONTAINER_PAD - SAFE_RIGHT_MARGIN;
 
               return (
-                <View
-                  style={{ zIndex: 10, elevation: 10, overflow: "visible" }}
-                >
-                  <LineChart
-                    key={`${w}-${selectedRange}`}
-                    width={chartWidth}
-                    height={CHART_H}
-                    data={chartData}
-                    spacing={spacing}
-                    curved
-                    thickness={3}
-                    hideRules={false}
-                    yAxisLabelWidth={Y_LABEL_W}
-                    initialSpacing={LEFT_PAD}
-                    // Zmiana endSpacing na 6 zgodnie z życzeniem
-                    endSpacing={6}
-                    yAxisColor={theme.colors.outlineVariant}
-                    xAxisColor={theme.colors.outlineVariant}
-                    yAxisTextStyle={{
-                      opacity: 0.7,
-                      color: theme.colors.onSurface,
+                <View style={{ zIndex: 10, elevation: 10 }}>
+                  <View
+                    style={{
+                      overflow: "hidden",
+                      height: CHART_H,
+                      width: chartWidth,
                     }}
-                    xAxisLabelTextStyle={{
-                      opacity: 0.7,
-                      color: theme.colors.onSurface,
-                    }}
-                    color={theme.colors.primary}
-                    // --- KONFIGURACJA ZAKRESU 0-300 ---
-                    yAxisOffset={WEIGHT_MIN_Y} // Start od 0
-                    maxValue={WEIGHT_RANGE} // Zakres 300
-                    yAxisLabelTexts={Y_LABELS} // Sztywne etykiety
-                    noOfSections={12} // Co 25 (300 / 25 = 12)
-                    // ----------------------------------
+                  >
+                    <LineChart
+                      key={`${w}-${selectedRange}`}
+                      width={chartWidth}
+                      height={CHART_H}
+                      data={chartData}
+                      spacing={spacing}
+                      curved
+                      thickness={3}
+                      hideRules={false}
+                      yAxisLabelWidth={Y_LABEL_W}
+                      initialSpacing={LEFT_PAD}
+                      endSpacing={6}
+                      yAxisColor={theme.colors.outlineVariant}
+                      xAxisColor={theme.colors.outlineVariant}
+                      yAxisTextStyle={{
+                        opacity: 0.7,
+                        color: theme.colors.onSurface,
+                      }}
+                      xAxisLabelTextStyle={{
+                        opacity: 0.7,
+                        color: theme.colors.onSurface,
+                      }}
+                      color={theme.colors.primary}
+                      maxValue={WEIGHT_RANGE}
+                      stepValue={50}
+                      noOfSections={6}
+                      yAxisLabelTexts={Y_LABELS}
+                      yAxisOffset={0}
+                      scrollToEnd
+                      scrollAnimation={false}
+                      hideDataPoints={true}
+                      pointerConfig={{
+                        pointerStripHeight: CHART_H,
+                        pointerStripColor: theme.colors.outlineVariant,
+                        pointerStripWidth: 2,
+                        pointerColor: theme.colors.primary,
+                        radius: 4,
+                        pointerLabelWidth: 100,
+                        pointerLabelHeight: 60,
+                        activatePointersOnLongPress: true,
+                        autoAdjustPointerLabelPosition: false,
+                        shiftPointerLabelY: 45,
 
-                    scrollToEnd
-                    scrollAnimation={false}
-                    hideDataPoints={true}
-                    pointerConfig={{
-                      pointerStripHeight: CHART_H,
-                      pointerStripColor: theme.colors.outlineVariant,
-                      pointerStripWidth: 2,
-                      pointerColor: theme.colors.primary,
-                      radius: 4,
-                      pointerLabelWidth: 100,
-                      pointerLabelHeight: 60,
-                      activatePointersOnLongPress: true,
-                      autoAdjustPointerLabelPosition: false,
-                      shiftPointerLabelY: 45,
+                        pointerLabelComponent: (items: any) => {
+                          const item = items[0];
+                          const { full } = formatDateTime(item.timestamp);
+                          // Używamy originalValue do wyświetlania w dymku
+                          const valToShow =
+                            item.originalValue !== undefined
+                              ? item.originalValue
+                              : item.value;
 
-                      pointerLabelComponent: (items: any) => {
-                        const item = items[0];
-                        const { full } = formatDateTime(item.timestamp);
-
-                        return (
-                          <View
-                            style={{
-                              height: 60,
-                              width: 100,
-                              justifyContent: "flex-end",
-                              alignItems: "center",
-                            }}
-                          >
+                          return (
                             <View
                               style={{
-                                backgroundColor: theme.colors.inverseSurface,
-                                borderRadius: 8,
-                                paddingHorizontal: 8,
-                                paddingVertical: 4,
+                                height: 60,
+                                width: 100,
+                                justifyContent: "flex-end",
+                                alignItems: "center",
                               }}
                             >
-                              <Text
+                              <View
                                 style={{
-                                  color: theme.colors.inverseOnSurface,
-                                  fontWeight: "bold",
-                                  fontSize: 14,
-                                  textAlign: "center",
+                                  backgroundColor: theme.colors.inverseSurface,
+                                  borderRadius: 8,
+                                  paddingHorizontal: 8,
+                                  paddingVertical: 4,
                                 }}
                               >
-                                {item.value} kg
-                              </Text>
-                              <Text
-                                style={{
-                                  color: theme.colors.inverseOnSurface,
-                                  fontSize: 10,
-                                  textAlign: "center",
-                                }}
-                              >
-                                {full}
-                              </Text>
+                                <Text
+                                  style={{
+                                    color: theme.colors.inverseOnSurface,
+                                    fontWeight: "bold",
+                                    fontSize: 14,
+                                    textAlign: "center",
+                                  }}
+                                >
+                                  {valToShow} kg
+                                </Text>
+                                <Text
+                                  style={{
+                                    color: theme.colors.inverseOnSurface,
+                                    fontSize: 10,
+                                    textAlign: "center",
+                                  }}
+                                >
+                                  {full}
+                                </Text>
+                              </View>
                             </View>
-                          </View>
-                        );
-                      },
-                    }}
-                  />
+                          );
+                        },
+                      }}
+                    />
+                  </View>
                 </View>
               );
             })()}
@@ -473,7 +445,7 @@ export default function WeightDetails() {
 
       <View style={{ alignItems: "center", marginTop: 8 }}>
         <Text variant="labelSmall" style={{ opacity: 0.5 }}>
-          {hasData ? "Przytrzymaj wykres, aby sprawdzić punkt" : ""}
+          Przytrzymaj wykres, aby sprawdzić punkt
         </Text>
       </View>
 
@@ -515,14 +487,16 @@ const styles = StyleSheet.create({
   },
   rangeContainer: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
+    justifyContent: "space-between",
     marginBottom: 8,
-    gap: 8,
+    gap: 4,
   },
   rangeButton: {
-    paddingHorizontal: 12,
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 6,
+    paddingHorizontal: 0,
     borderRadius: 16,
   },
   rangeText: {

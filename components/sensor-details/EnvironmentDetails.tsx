@@ -15,19 +15,12 @@ import { HumidityDataType, PressureDataType } from "./types";
 const Y_LABEL_W = 40;
 const LEFT_PAD = 10;
 const CHART_H = 220;
-// Stała do korekty szerokości ScrollView
 const CONTAINER_PAD = 100;
 const SAFE_RIGHT_MARGIN = 0;
-
-// Docelowa liczba punktów na wykresie.
 const TARGET_POINTS_COUNT = 40;
-
-// Zakres wilgotności
 const HUM_MIN_OK = 30;
 const HUM_MAX_OK = 70;
 
-// Konfiguracja osi Y
-// Wilgotność 0-100 co 10
 const HUMIDITY_LABELS = [
   "0",
   "10",
@@ -45,13 +38,11 @@ const HUMIDITY_MAX = 100;
 const HUMIDITY_SECTIONS = 10;
 const HUMIDITY_OFFSET = 0;
 
-// Ciśnienie 980-1040 co 10
 const PRESSURE_LABELS = ["980", "990", "1000", "1010", "1020", "1030", "1040"];
 const PRESSURE_OFFSET = 980;
-const PRESSURE_RANGE = 60; // 1040 - 980
+const PRESSURE_RANGE = 60;
 const PRESSURE_SECTIONS = 6;
 
-// Definicja typów zakresów
 type RangeType = "1D" | "3D" | "7D" | "2T" | "4T";
 
 // --- FORMATOWANIE DATY ---
@@ -75,19 +66,11 @@ const prepareDataForChart = (
 ) => {
   const labelWidth = 60;
   const labelShift = spacing / 2 - labelWidth / 2;
-
-  // Ustalamy sztywny krok etykiet w zależności od zagęszczenia punktów (spacing).
-  // Dla 1D (spacing 20) -> co 4 punkty
-  // Dla reszty (spacing 12) -> co 6 punktów
   const step = range === "1D" ? 4 : 6;
 
   return rawData.map((item, index) => {
-    // Liczymy indeks od końca, aby etykiety były "zakotwiczone" z prawej strony (od "Teraz").
     const indexFromEnd = rawData.length - 1 - index;
-
     let showLabel = false;
-
-    // Jeśli indeks od końca dzieli się przez krok bez reszty, pokazujemy etykietę.
     if (indexFromEnd % step === 0) {
       showLabel = true;
     }
@@ -123,8 +106,7 @@ const prepareDataForChart = (
 export default function EnvironmentDetails() {
   const theme = useTheme();
 
-  // 1. POBIERANIE DANYCH (Dwa niezależne zapytania)
-  // Wilgotność
+  // POBIERANIE DANYCH
   const humQuery = useSensorData<HumidityDataType[]>({
     sensorPath: "/readings/humidity",
     searchParams: [
@@ -136,7 +118,6 @@ export default function EnvironmentDetails() {
     ],
   });
 
-  // Ciśnienie
   const pressQuery = useSensorData<PressureDataType[]>({
     sensorPath: "/readings/pressure",
     searchParams: [
@@ -173,13 +154,10 @@ export default function EnvironmentDetails() {
 
   const spacing = selectedRange === "1D" ? 20 : 12;
 
-  // Kolory
   const humidityColor = theme.colors.primary;
   const pressureColor = theme.colors.tertiary;
   const currentColor = mode === "humidity" ? humidityColor : pressureColor;
 
-  // --- PRZYGOTOWANIE DANYCH DO STATYSTYK (Footer) ---
-  // Pobieramy "Najnowsze" wartości z zestawu 1D (najświeższego)
   const latestHumData = humQuery.data?.[0];
   const latestPressData = pressQuery.data?.[0];
 
@@ -187,7 +165,6 @@ export default function EnvironmentDetails() {
   let currentPressValue: number | null = null;
 
   if (latestHumData && latestHumData.length > 0) {
-    // Sortujemy dla pewności
     const sorted = [...latestHumData].sort(
       (a, b) =>
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -203,7 +180,6 @@ export default function EnvironmentDetails() {
     currentPressValue = sorted[sorted.length - 1].pressure_hpa;
   }
 
-  // Określenie statusu wilgotności
   let humStatus = "--";
   if (currentHumValue !== null) {
     if (currentHumValue >= HUM_MIN_OK && currentHumValue <= HUM_MAX_OK) {
@@ -215,8 +191,6 @@ export default function EnvironmentDetails() {
     }
   }
 
-  // --- PRZYGOTOWANIE DANYCH DO WYKRESU ---
-  // Wybór surowych danych w zależności od trybu i zakresu
   let rawBackendData: { timestamp: string; value: number }[] = [];
   const activeQuery = mode === "humidity" ? humQuery : pressQuery;
   const activeDataSet = activeQuery.data;
@@ -244,7 +218,6 @@ export default function EnvironmentDetails() {
     }
 
     if (selectedSet) {
-      // Mapowanie na wspólny format { timestamp, value }
       rawBackendData = selectedSet.map((item: any) => ({
         timestamp: item.timestamp,
         value: mode === "humidity" ? item.humidity_percent : item.pressure_hpa,
@@ -252,13 +225,12 @@ export default function EnvironmentDetails() {
     }
   }
 
-  // Przetwarzanie danych dla wykresu (Downsampling)
+  // Downsampling
   const processedChartData = React.useMemo(() => {
     if (!rawBackendData || rawBackendData.length === 0) {
       return [];
     }
 
-    // Sortowanie
     const fullSortedHistory = [...rawBackendData].sort(
       (a, b) =>
         new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
@@ -268,7 +240,6 @@ export default function EnvironmentDetails() {
     ).getTime();
     const lastVal = fullSortedHistory[fullSortedHistory.length - 1].value;
 
-    // Downsampling
     const totalPoints = fullSortedHistory.length;
     let sampledData = [];
 
@@ -287,7 +258,6 @@ export default function EnvironmentDetails() {
         });
       }
 
-      // Zawsze dodaj ostatni punkt
       const lastSampled = sampledData[sampledData.length - 1];
       if (lastSampled.timestamp.getTime() !== nowTimestamp) {
         sampledData.push({
@@ -306,7 +276,6 @@ export default function EnvironmentDetails() {
 
   const hasData = processedChartData.length > 0;
 
-  // Konfiguracja osi Y
   const isHum = mode === "humidity";
   const yLabels = isHum ? HUMIDITY_LABELS : PRESSURE_LABELS;
   const sections = isHum ? HUMIDITY_SECTIONS : PRESSURE_SECTIONS;
@@ -358,8 +327,6 @@ export default function EnvironmentDetails() {
           </Text>
         </View>
       </View>
-
-      {/* Przełącznik trybu */}
       <SegmentedButtons
         value={mode}
         onValueChange={(v) => setMode(v as any)}
@@ -438,7 +405,6 @@ export default function EnvironmentDetails() {
                     hideRules={false}
                     yAxisLabelWidth={Y_LABEL_W}
                     initialSpacing={LEFT_PAD}
-                    // endSpacing = 6 zgodnie z wymaganiem
                     endSpacing={6}
                     yAxisColor={theme.colors.outlineVariant}
                     xAxisColor={theme.colors.outlineVariant}
@@ -451,7 +417,6 @@ export default function EnvironmentDetails() {
                       color: theme.colors.onSurface,
                     }}
                     color={currentColor}
-                    // Skala
                     yAxisOffset={yOffset}
                     maxValue={maxVal}
                     yAxisLabelTexts={yLabels}
@@ -535,10 +500,7 @@ export default function EnvironmentDetails() {
         <View style={[styles.dot, { backgroundColor: currentColor }]} />
         <Text>{mode === "humidity" ? "Wilgotność" : "Ciśnienie"}</Text>
       </View>
-
-      {/* STATYSTYKI: Ciśnienie, Wilgotność, Status */}
       <View style={styles.row}>
-        {/* Kolumna 1: Wilgotność */}
         <View style={styles.col}>
           <Text variant="labelSmall" style={{ opacity: 0.7 }}>
             Wilgotność (teraz)
@@ -550,8 +512,6 @@ export default function EnvironmentDetails() {
             Sensor
           </Text>
         </View>
-
-        {/* Kolumna 2: Ciśnienie */}
         <View style={styles.col}>
           <Text variant="labelSmall" style={{ opacity: 0.7 }}>
             Ciśnienie (teraz)
@@ -565,8 +525,6 @@ export default function EnvironmentDetails() {
             Barometr
           </Text>
         </View>
-
-        {/* Kolumna 3: Status Wilgotności */}
         <View style={styles.col}>
           <Text variant="labelSmall" style={{ opacity: 0.7 }}>
             Status
@@ -588,14 +546,16 @@ const styles = StyleSheet.create({
   },
   rangeContainer: {
     flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "center",
+    justifyContent: "space-between",
     marginBottom: 8,
-    gap: 8,
+    gap: 4,
   },
   rangeButton: {
-    paddingHorizontal: 12,
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 6,
+    paddingHorizontal: 0,
     borderRadius: 16,
   },
   rangeText: {
